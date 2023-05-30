@@ -18,9 +18,21 @@ def main():
 
     index = builder.build()
     posting = Posting()
+    query = read_query()
+    if(getTermType(query)):
+        print("Term type is no Proximity ")
+    else:
+        k = extractK(query)
+        if(k.length() > 0):
+            print("k is: ", k)
+            #query = query[:k[0][0]]
+
+    operators = get_operators(query)
+    print("Operators are: ", operators)
+
 
 def read_query():
-    query = input("Enter query: ")
+    query = input("Enter query. Please use AND_NOT for AND NOT and OR_NOT for OR NOT: ")
     print("Query is: ", query)
     return query
 

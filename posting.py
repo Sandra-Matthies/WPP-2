@@ -1,6 +1,6 @@
 class Posting:
     def __init__(self):
-        self._posting = {}
+        self._posting = {}        
 
     # Basic Insersect merge two lists of IndexTerm objects and return the result as list
     # This is the basic intersect algorithm
