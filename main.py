@@ -2,21 +2,26 @@
 
 import glob
 from os import path
-
+import time
 import tokenizer
 from index import IndexBuilder, IndexTerm
 from posting import Posting
 
 
 def main():
+    start = time.time()
     builder = IndexBuilder()
 
     for file in glob.iglob("./CISI/CISI.ALL.docs/*"):
         doc_id = path.basename(file)
         for token in tokenizer.tokenize(file):
             builder.add(IndexTerm(token, doc_id))
-
     index = builder.build()
+    #index.buildNgramIndex(3)
+    end = time.time()
+    # Zur Auswertung der Laufzeit des Indexbaus
+    print(f"Index built in {end - start} seconds.")
+    # TODO Auswertung der Laufzeit der Abfrageverarbeitung
     posting = Posting()
     query = read_query()
     if(getTermType(query)):
@@ -29,6 +34,7 @@ def main():
 
     operators = get_operators(query)
     print("Operators are: ", operators)
+    #TODO Auswertung der Laufzeit bei der ERmittlung der Kandidaten  zur Rechtschreibkorrektur
 
 
 def read_query():
