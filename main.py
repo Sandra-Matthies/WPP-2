@@ -40,13 +40,15 @@ def main():
     resultList = [1,2,2,3,3,3,3,3,3,3,3,3,34,456,445,4545,45]
     r = input("Wie viele Ergebnisse sollen mindestens vorliegen, damit keine Rechtschreibkorrektur angewandt wird? ")
     term =""
+    numberOfLetters = input("Wie Groß soll ein kgramm sein? ")
     if( resultList.length() < r):
         start = time.time()
         kGramIndex = KGramIndex(term)
-        kGramIndex.build(3)
+        kGramIndex.build(numberOfLetters)
         kGramIndex.setKGramValues(index)
         end = time.time()
         print(f"k-gram Index built in {end - start} seconds.")
+        # TODO Prüfung welcher Term bei der Suche Verwendet werden soll
 
 
 def read_query():
