@@ -17,7 +17,7 @@ def main():
         for token in tokenizer.tokenize(file):
             builder.add(IndexTerm(token, doc_id))
     index = builder.build()
-    #index.buildNgramIndex(3)
+    
     end = time.time()
     # Zur Auswertung der Laufzeit des Indexbaus
     print(f"Index built in {end - start} seconds.")
@@ -34,7 +34,15 @@ def main():
 
     operators = get_operators(query)
     print("Operators are: ", operators)
-    #TODO Auswertung der Laufzeit bei der ERmittlung der Kandidaten  zur Rechtschreibkorrektur
+    # Rechtschreibkorrektur wird nur angewandt, wenn weniger als r Ergebnisse vorliegen
+    # TODO resultList austauschen mit korrekter Ergebnis Liste
+    resultList = [1,2,2,3,3,3,3,3,3,3,3,3,34,456,445,4545,45]
+    r = input("Wie viele Ergebnisse sollen mindestens vorliegen, damit keine Rechtschreibkorrektur angewandt wird? ")
+    if( resultList.length() < r):
+        start = time.time()
+        index.buildNgramIndex(3)
+        end = time.time()
+        print(f"k-gram Index built in {end - start} seconds.")
 
 
 def read_query():

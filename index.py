@@ -1,3 +1,5 @@
+from Levenshtein import distance as lev
+
 class IndexTerm:
     def __init__(self, term, doc_id):
         self.term = term
@@ -43,3 +45,9 @@ class Index:
                 if ngram not in self._index[index][0].kgrams and len(ngram) == n:
                     self._index[index][0].kgrams.append(ngram)
             index += 1
+
+    def computeLevenstheinDistance(self, term1, term2):
+        return lev(term1, term2)
+    
+    def computeJaccardCoeffcient(self, itersectionList, unionList):
+        return len(itersectionList) / (len(unionList) - len(itersectionList))

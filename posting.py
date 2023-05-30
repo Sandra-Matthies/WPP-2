@@ -60,31 +60,31 @@ class Posting:
             i += 1
         return result
     
-    # TODO: Check logic
     # Basic OR_Not merge two lists of IndexTerm objects and return the result as list
     # This is the basic OR_Not algorithm
     # It is not the optimal algorithm
     def basicOrNot(self, list1, list2):
+        return self.basicUnion(list1, self.basicNot(list2))
+    
+    def basicNot(self, list1, listOfAllDocs):
         result = []
         i = 0
         j = 0
-        while i < len(list1) and j < len(list2):
-            if list1[i].docId == list2[j].docId:
+        while i < len(list1) and j < len(listOfAllDocs):
+            if list1[i].docId == listOfAllDocs[j].docId:
                 i += 1
                 j += 1
-            elif list1[i].docId < list2[j].docId:
-                result.append(list1[i].docId)
+            elif list1[i].docId < listOfAllDocs[j].docId:
                 i += 1
             else:
-                result.append(list2[j].docId)
+                result.append(listOfAllDocs[j].docId)
                 j += 1
-        while i < len(list1):
-            result.append(list1[i].docId)
-            i += 1
-        while j < len(list2):
-            result.append(list2[j].docId)
+        while j < len(listOfAllDocs):
+            result.append(listOfAllDocs[j].docId)
             j += 1
         return result
+
+
 
     # Advanced Intersect merge two lists of IndexTerm objects and return the result as list
     # This is the advanced intersect algorithm
