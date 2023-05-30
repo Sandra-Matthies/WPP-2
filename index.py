@@ -1,3 +1,4 @@
+
 from Levenshtein import distance as lev
 
 class IndexTerm:
@@ -7,7 +8,7 @@ class IndexTerm:
         self.kgrams = []
 
     def __eq__(self, other):
-        return self.term == other.term and self.doc_id == other.doc_id and self.kgrams == other.kgrams
+        return self.term == other.term and self.doc_id == other.doc_id
 
     def __hash__(self):
         return hash((self.term, self.doc_id))
@@ -35,19 +36,41 @@ class Index:
     def __init__(self, index):
         self._index = index
     
-    # Erstellung k-gramm Index
-    def buildNgramIndex(self, n):
-        index = 0
-        for term in self._index:
-            term = term[0].term
-            for i in range(0, len(term)-1):
-                ngram = term[i : i + n]
-                if ngram not in self._index[index][0].kgrams and len(ngram) == n:
-                    self._index[index][0].kgrams.append(ngram)
-            index += 1
+# Klasse für die KGramm Index
+# Für eine Abfrage, die nicht mindestens r Dokumente zurück liefert wird eine Rechtschreibkorrektur durchgeführt.
+# Für einen Anfrageterm t wird ein k-gramm Index erstellt, der alle k-gramme von t enthält.
+# Für jedes k-gramm wird eine potentzieller Wert im Index gepeichert -> t'
+# Für jeden Term t' im Index wird die Levenshtein Distanz zwischen t und t' berechnet und gespeichert.
+# Die Ergebnisliste wird nach der Levenshtein Distanz sortiert.
+class KGramIndex:
+    def __init__(self, term):
+        self._term = term
+        self._kgrams = []
 
-    def computeLevenstheinDistance(self, term1, term2):
-        return lev(term1, term2)
+    # Erstellung k-gramme
+    def build(self, n):
+        for i in range(0, len(self._term)-1):
+            kgram = self._term[i : i + n]
+            if kgram not in self._kgrams and len(kgram) == n:
+                self._kgrams.append({"k":kgram, "values":[]})
+
+    def setKGramValues(self, termList):
+        for val in range(0, len(termList)-1):
+            idx = 0
+            for k in self._kgrams:
+                if(k in val):
+                    if(val not in self._kgrams[idx]["values"]):
+                        self._kgrams[idx]["values"].append({"val": val, "lDist": self.computeLevenstheinDistance(val)})
+                idx += 1
+            self.orderByLevenstheinDistance()
+
+    def computeLevenstheinDistance(self, value):
+        return lev(self._term, value)
+
+    def orderByLevenstheinDistance(self):
+        for i in range(0, len(self._kgrams)-1):
+            self._kgrams[i]["values"].sort(key=lambda x: x["lDist"])
     
-    def computeJaccardCoeffcient(self, itersectionList, unionList):
-        return len(itersectionList) / (len(unionList) - len(itersectionList))
+    
+    
+

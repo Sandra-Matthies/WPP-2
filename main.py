@@ -4,8 +4,9 @@ import glob
 from os import path
 import time
 import tokenizer
-from index import IndexBuilder, IndexTerm
+from index import IndexBuilder, IndexTerm, KGramIndex
 from posting import Posting
+
 
 
 def main():
@@ -38,9 +39,12 @@ def main():
     # TODO resultList austauschen mit korrekter Ergebnis Liste
     resultList = [1,2,2,3,3,3,3,3,3,3,3,3,34,456,445,4545,45]
     r = input("Wie viele Ergebnisse sollen mindestens vorliegen, damit keine Rechtschreibkorrektur angewandt wird? ")
+    term =""
     if( resultList.length() < r):
         start = time.time()
-        index.buildNgramIndex(3)
+        kGramIndex = KGramIndex(term)
+        kGramIndex.build(3)
+        kGramIndex.setKGramValues(index)
         end = time.time()
         print(f"k-gram Index built in {end - start} seconds.")
 
@@ -88,6 +92,10 @@ def get_posting_list(query, posting):
         posting_list.append(posting.get_posting_list(term))
     return posting_list
 
+
+    
+def computeJaccardCoeffcient(itersectionList, unionList):
+    return len(itersectionList) / (len(unionList) - len(itersectionList))
 
 if __name__ == "__main__":
     main()
