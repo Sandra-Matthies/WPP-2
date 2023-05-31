@@ -80,8 +80,7 @@ class QueryType(Enum):
     PROX = 2
     PHRASE = 3
     OR = 4
-    NOT = 5
-    GROUP = 6
+    GROUP = 5
 
 
 class Query:

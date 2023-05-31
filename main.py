@@ -1,47 +1,98 @@
 #!/usr/bin/env python
 
 import glob
-from os import path
+import sys
 import time
+from os import path
+
+import click
+
 import tokenizer
-from index import IndexBuilder, IndexTerm, KGramIndex
+from index import Index, IndexBuilder, IndexTerm, KGramIndex
+from input_parser import Query, QueryType, parse
 from posting import Posting
 
 
+def measure_time(func):
+    """
+    Executes `func` and prints its execution time on stderr.
+    """
 
-def main():
-    start = time.time()
+    def wrapper(*args, **kwargs):
+        start = time.time()
+        result = func(*args, **kwargs)
+        end = time.time()
+        print(f"TIME [{func.__name__}]: {end - start} seconds.", file=sys.stderr)
+        return result
+
+    return wrapper
+
+
+@measure_time
+def build_index() -> Index:
     builder = IndexBuilder()
 
     for file in glob.iglob("./CISI/CISI.ALL.docs/*"):
         doc_id = path.basename(file)
         for token in tokenizer.tokenize(file):
             builder.add(IndexTerm(token, doc_id))
-    index = builder.build()
-    
-    end = time.time()
-    # Zur Auswertung der Laufzeit des Indexbaus
-    print(f"Index built in {end - start} seconds.")
-    # TODO Auswertung der Laufzeit der Abfrageverarbeitung
-    posting = Posting()
-    query = read_query()
-    if(getTermType(query)):
-        print("Term type is no Proximity ")
-    else:
-        k = extractK(query)
-        if(k.length() > 0):
-            print("k is: ", k)
-            #query = query[:k[0][0]]
 
-    operators = get_operators(query)
-    print("Operators are: ", operators)
+    return builder.build()
+
+
+@measure_time
+def parse_query(query) -> list[Query]:
+    return parse(query)
+
+
+@click.command()
+@click.option("-q", "--query", help="Boolean query to search for.", required=True)
+@click.option(
+    "-k",
+    help="k-gram size for the k-gram index.",
+    type=click.IntRange(1),
+    required=True,
+)
+@click.option(
+    "-r",
+    help="Activate spelling correction when less than r documents are found.",
+    type=click.IntRange(1),
+    default=3,
+)
+def main(query, k, r):
+    and_queries = parse_query(query)
+
+    index = build_index()
+    posting = Posting()
+    posting.basicAndNot
+
+    for query in and_queries:
+        print(f"DEBUG: {query}")
+        # TODO: GROUP and OR queries must be traversed recursively
+        #       because GROUP queries can be nested and OR queries
+        #       can contain GROUP queries.
+        if query.type == QueryType.GROUP:
+            print("TODO: GROUP")
+        elif query.type == QueryType.OR:
+            print("TODO: OR")
+        elif query.type == QueryType.PROX:
+            print("TODO: PROX")
+        elif query.type == QueryType.TERM:
+            print("TODO: TERM")
+            if query.is_not:
+                pass
+            else:
+                pass
+
+    # TODO: Remove
+    exit(1)
+
     # Rechtschreibkorrektur wird nur angewandt, wenn weniger als r Ergebnisse vorliegen
     # TODO resultList austauschen mit korrekter Ergebnis Liste
-    resultList = [1,2,2,3,3,3,3,3,3,3,3,3,34,456,445,4545,45]
-    r = input("Wie viele Ergebnisse sollen mindestens vorliegen, damit keine Rechtschreibkorrektur angewandt wird? ")
-    term =""
+    resultList = [1, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 34, 456, 445, 4545, 45]
+    term = ""
     numberOfLetters = input("Wie Groß soll ein kgramm sein? ")
-    if( resultList.length() < r):
+    if resultList.length() < r:
         start = time.time()
         kGramIndex = KGramIndex(term)
         kGramIndex.build(numberOfLetters)
@@ -51,43 +102,6 @@ def main():
         # TODO Prüfung welcher Term bei der Suche Verwendet werden soll
 
 
-def read_query():
-    query = input("Enter query. Please use AND_NOT for AND NOT and OR_NOT for OR NOT: ")
-    print("Query is: ", query)
-    return query
-
-def getTermType(term):
-    if "/" in term:
-        return 0
-    else:
-        return 1
-
-def extractK(query):
-    k =[]
-    for i in range(0,query.length()):
-        if query[i] == "/":
-            k.append({i, query[i+1:]}), 
-    return k
-
-def get_operators(query):
-    operators = []
-    if "AND" in query:
-        operators.append({query.rfind("AND"),"AND"})
-    if "OR" in query:
-        operators.append({query.rfind("OR"),"OR"})
-    if "AND_NOT" in query:
-        operators.append({query.rfind("AND_NOT"),"AND_NOT"})
-    if "NOT" in query:
-        operators.append({query.rfind("NOT"),"NOT"})
-    if "OR_NOT" in query:
-        operators.append({query.rfind("OR_NOT"),"OR_NOT"})
-    else:
-        return operators
-
-def parse_query(query):
-    query = query.split()
-    return query
-
 def get_posting_list(query, posting):
     posting_list = []
     for term in query:
@@ -95,9 +109,9 @@ def get_posting_list(query, posting):
     return posting_list
 
 
-    
 def computeJaccardCoeffcient(itersectionList, unionList):
     return len(itersectionList) / (len(unionList) - len(itersectionList))
+
 
 if __name__ == "__main__":
     main()
