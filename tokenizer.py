@@ -6,6 +6,7 @@ def tokenize(path):
     Returns an iterator of token strings where each token matches
     the following regex: [a-z0-9']+
     """
+    token_pos = 0
     with open(path, "r") as f:
         while True:
             line = f.readline()
@@ -28,4 +29,5 @@ def tokenize(path):
 
                 # Tokens like "=" do not match the above regex so we ignore them.
                 if capture is not None:
-                    yield capture.groups()[0].lower()
+                    yield (capture.groups()[0].lower(), token_pos)
+                    token_pos += 1

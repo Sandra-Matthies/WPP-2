@@ -34,8 +34,8 @@ def build_index() -> Index:
 
     for file in glob.iglob("./CISI/CISI.ALL.docs/*"):
         doc_id = path.basename(file)
-        for token in tokenizer.tokenize(file):
-            builder.add(IndexTerm(token, doc_id))
+        for token, pos in tokenizer.tokenize(file):
+            builder.add(IndexTerm(token, doc_id, pos))
 
     return builder.build()
 
@@ -64,7 +64,6 @@ def main(query, k, r):
 
     index = build_index()
     posting = Posting()
-    posting.basicAndNot
 
     for query in and_queries:
         print(f"DEBUG: {query}")
@@ -77,11 +76,14 @@ def main(query, k, r):
             print("TODO: OR")
         elif query.type == QueryType.PROX:
             print("TODO: PROX")
+        elif query.type == QueryType.PHRASE:
+            print("TODO: PHRASE")
         elif query.type == QueryType.TERM:
             print("TODO: TERM")
             if query.is_not:
-                pass
+                print("TODO: NOT")
             else:
+                index.get_posting_list(query.term)
                 pass
 
     # TODO: Remove
