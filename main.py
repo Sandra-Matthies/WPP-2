@@ -8,7 +8,7 @@ from os import path
 import click
 
 import tokenizer
-from index import Index, IndexBuilder, IndexTerm, KGramIndex
+from index import Index, IndexBuilder, IndexTerm, KGramIndex, PositionalPosting
 from input_parser import Query, QueryType, parse
 from posting import Posting
 
@@ -35,7 +35,7 @@ def build_index() -> Index:
     for file in glob.iglob("./CISI/CISI.ALL.docs/*"):
         doc_id = path.basename(file)
         for token, pos in tokenizer.tokenize(file):
-            builder.add(IndexTerm(token, doc_id, pos))
+            builder.add(IndexTerm(token, int(doc_id), pos))
 
     return builder.build()
 
@@ -63,7 +63,6 @@ def main(query, k, r):
     and_queries = parse_query(query)
 
     index = build_index()
-    posting = Posting()
 
     for query in and_queries:
         print(f"DEBUG: {query}")
@@ -78,13 +77,51 @@ def main(query, k, r):
             print("TODO: PROX")
         elif query.type == QueryType.PHRASE:
             print("TODO: PHRASE")
+            positional_postings = [
+                index.get_positional_postings(x) for x in query.parts
+            ]
+
+            if None in positional_postings:
+                print("TODO: NO MATCH")
+                break
+
+            intersect_doc_ids = Posting.basicIntersect(
+                positional_postings[0], positional_postings[1]
+            )
+
+            result: list[PositionalPosting] = []
+
+            for doc_id in intersect_doc_ids:
+                for posting_list in positional_postings:
+                    for positional_posting in posting_list:
+                        if positional_posting.doc_id == doc_id:
+                            result.append(positional_posting)
+
+            print("INTERSECT", intersect_doc_ids)
+            print("RESULT", result)
+
+            new_left = None
+
+            for left, right in zip(result, result[1:]):
+                new_left = Posting.get_k_proximity(
+                    1, new_left if new_left is not None else left, right
+                )
+                print(new_left)
+
+            # Posting.get_k_proximity(
+            #     1, result[: int(len(result) / 2)], result[int(len(result) / 2) :]
+            # )
+
         elif query.type == QueryType.TERM:
             print("TODO: TERM")
             if query.is_not:
                 print("TODO: NOT")
             else:
-                index.get_posting_list(query.term)
-                pass
+                posting_list = index.get_positional_postings(query.term)
+                if posting_list is None:
+                    print("TODO: NOT FOUND")
+                else:
+                    print("TODO: Output", posting_list)
 
     # TODO: Remove
     exit(1)

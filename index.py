@@ -2,7 +2,7 @@ from Levenshtein import distance as lev
 
 
 class IndexTerm:
-    def __init__(self, term, doc_id, pos):
+    def __init__(self, term: str, doc_id: int, pos: int):
         self.term = term
         self.doc_id = doc_id
         self.position = pos
@@ -23,8 +23,8 @@ class IndexTerm:
         return f"{self.term}#{self.doc_id}#{self.kgrams}"
 
 
-class PostingList:
-    def __init__(self, doc_id: str, positions: list[int]):
+class PositionalPosting:
+    def __init__(self, doc_id: int, positions: list[int]):
         self.doc_id = doc_id
         self.positions = positions
 
@@ -32,8 +32,8 @@ class PostingList:
         return f"{self.doc_id}:{self.positions}"
 
 
-class PostingItem:
-    def __init__(self, term: str, doc_freq: int, postings: list[PostingList]):
+class PostingList:
+    def __init__(self, term: str, doc_freq: int, postings: list[PositionalPosting]):
         self.term = term
         self.doc_freq = doc_freq
         self.postings = postings
@@ -44,7 +44,7 @@ class PostingItem:
 
 class IndexBuilder:
     def __init__(self):
-        self._index = {}
+        self._index: dict[IndexTerm, int] = {}
 
     def add(self, term: IndexTerm):
         self._index[term] = self._index.get(term, 0) + 1
@@ -57,37 +57,42 @@ class IndexBuilder:
                 (term.term, term.doc_id), []
             ) + [term.position]
 
-        # Sort by term, then docID, then count.
-        sorted_index = sorted(
-            self._index.items(), key=lambda k: (k[0].term, k[0].doc_id, -k[1])
-        )
+        # Sort by term, then docID.
+        sorted_index = sorted(self._index.keys(), key=lambda k: (k.term, k.doc_id))
 
-        posting_items = {}
+        postings_lists: dict[str, PostingList] = {}
 
-        for term, doc_id in sorted_index:
+        for term in sorted_index:
+            if (term.term, term.doc_id) not in positions_map:
+                continue
+
             positions = positions_map[(term.term, term.doc_id)]
-            if term.term not in posting_items:
-                posting_items[term.term] = PostingItem(
+
+            del positions_map[(term.term, term.doc_id)]
+
+            if term.term not in postings_lists:
+                postings_lists[term.term] = PostingList(
                     term.term,
                     1,
-                    [PostingList(doc_id, positions)],
+                    [PositionalPosting(term.doc_id, positions)],
                 )
             else:
-                posting_items[term.term].doc_freq += 1
-                posting_items[term.term].postings.append(PostingList(doc_id, positions))
+                postings_lists[term.term].doc_freq += 1
+                postings_lists[term.term].postings.append(
+                    PositionalPosting(term.doc_id, positions)
+                )
 
-        # TODO: posting_items contains duplicate positions.
-        print(posting_items["in"])
-
-        return Index(posting_items)
+        return Index(postings_lists)
 
 
 class Index:
-    def __init__(self, entries: dict[str, PostingItem]):
+    def __init__(self, entries: dict[str, PostingList]):
         self._index = entries
 
-    def get_posting_list(self, term) -> PostingList:
-        return self._index[term].postings if term in self._index else None
+    def get_positional_postings(self, term) -> list[PositionalPosting]:
+        if term not in self._index:
+            return None
+        return sorted(self._index[term].postings, key=lambda k: k.doc_id)
 
 
 # Klasse für die KGramm Index

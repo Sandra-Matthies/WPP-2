@@ -143,6 +143,7 @@ class PhraseQuery(Query):
     def __init__(self, phrase: str):
         super().__init__(QueryType.PHRASE)
         self.phrase = phrase
+        self.parts = phrase.split()
 
     def __repr__(self) -> str:
         return super().__repr__() + f'"{self.phrase}"'
