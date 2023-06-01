@@ -163,3 +163,35 @@ class Posting:
                     positions.append(a + k)
 
         return PositionalPosting(pos_a.doc_id, positions)
+    
+    @staticmethod
+    def positionalIntersect(list1, list2, k):
+        result = []
+        i = 0
+        j = 0
+        while i < len(list1) and j < len(list2):
+            if list1[i].doc_id == list2[j].doc_id:
+                liste = []
+                positions1 = list1[i].positions
+                positions2 = list2[j].positions
+                k = 0
+                while k < len(positions1):
+                    l = 0
+                    while l < len(positions2):
+                        if abs(positions1[k] - positions2[l]) <= k:
+                            liste.append(positions2[k])
+                        elif positions2[l] > positions1[k]:
+                            break
+                        l += 1
+                    while liste != [] and abs(liste[0] - positions1[k]) > k:
+                        del liste[0]
+                    for ps in liste:
+                        result.append({list1.doc_id, positions1[k],ps})
+                        k += 1 
+                i += 1
+                j += 1
+            elif list1[i].doc_id < list2[j].doc_id:
+                i += 1
+            else:
+                j += 1
+        return result

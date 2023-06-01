@@ -60,6 +60,7 @@ def parse_query(query) -> list[Query]:
     default=3,
 )
 def main(query, k, r):
+    query="\"dewey dewey\""
     and_queries = parse_query(query)
 
     index = build_index()
@@ -85,10 +86,12 @@ def main(query, k, r):
                 print("TODO: NO MATCH")
                 break
 
-            intersect_doc_ids = Posting.basicIntersect(
-                positional_postings[0], positional_postings[1]
+            intersect_doc_ids = Posting.positionalIntersect(
+                positional_postings[0], positional_postings[1],k
             )
+            print("INTERSECT", intersect_doc_ids)
 
+            exit(1)
             result: list[PositionalPosting] = []
 
             for doc_id in intersect_doc_ids:
