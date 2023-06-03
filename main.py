@@ -60,7 +60,6 @@ def parse_query(query) -> list[Query]:
     default=3,
 )
 def main(query, k, r):
-    query="\"dewey dewey\""
     and_queries = parse_query(query)
 
     index = build_index()
@@ -91,7 +90,6 @@ def main(query, k, r):
             )
             print("INTERSECT", intersect_doc_ids)
 
-            exit(1)
             result: list[PositionalPosting] = []
 
             for doc_id in intersect_doc_ids:
@@ -122,27 +120,14 @@ def main(query, k, r):
             else:
                 posting_list = index.get_positional_postings(query.term)
                 if posting_list is None:
-                    print("TODO: NOT FOUND")
+                    print("0 Results")
+                    # Try to find a similar term
+                    executeKGramm(query.term, index)
                 else:
                     print("TODO: Output", posting_list)
-
-    # TODO: Remove
-    exit(1)
-
-    # Rechtschreibkorrektur wird nur angewandt, wenn weniger als r Ergebnisse vorliegen
-    # TODO resultList austauschen mit korrekter Ergebnis Liste
-    resultList = [1, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 34, 456, 445, 4545, 45]
-    term = ""
-    numberOfLetters = input("Wie Groß soll ein kgramm sein? ")
-    if resultList.length() < r:
-        start = time.time()
-        kGramIndex = KGramIndex(term)
-        kGramIndex.build(numberOfLetters)
-        kGramIndex.setKGramValues(index)
-        end = time.time()
-        print(f"k-gram Index built in {end - start} seconds.")
-        # TODO Prüfung welcher Term bei der Suche Verwendet werden soll
-
+                if(posting_list is not None and len(posting_list) < r):
+                    executeKGramm(query.term, index)
+        
 
 def get_posting_list(query, posting):
     posting_list = []
@@ -153,6 +138,29 @@ def get_posting_list(query, posting):
 
 def computeJaccardCoeffcient(itersectionList, unionList):
     return len(itersectionList) / (len(unionList) - len(itersectionList))
+
+# Rechtschreibkorrektur wird nur angewandt, wenn weniger als r Ergebnisse vorliegen
+def executeKGramm(term: str, index: Index):
+    numberOfLetters = input("Wie Groß soll ein kgramm sein? ")
+    start = time.time()
+    kGramIndex = KGramIndex(term)
+    kGramIndex.build(numberOfLetters)
+    kGramIndex.setKGramValues(index)
+    end = time.time()
+    print(f"k-gram Index built in {end - start} seconds.")
+    # verwende die kgramme mit dem niedrigsten lDist Wert
+    kGramIndex.getKGramsWithLowestLDistValue()
+    # hole die Postinglisten für die kgramme
+    print("KGramme mit niedrigstem lDist Wert: ", kGramIndex)
+    resultLists = []
+    for kgram in kGramIndex._kgrams:
+        kgramResultList = []
+        for obj in kgram["values"]:
+            kgramResultList.append(index.get_positional_postings(obj["val"]))
+            print("Postingliste für ", obj["val"], ": ", index.get_positional_postings(obj["val"]))
+        resultLists.append(kgramResultList)
+    print("resultLists: ", resultLists)
+
 
 
 if __name__ == "__main__":

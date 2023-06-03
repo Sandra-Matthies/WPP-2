@@ -20,7 +20,7 @@ class IndexTerm:
         return hash((self.term, self.doc_id, self.position, tuple(self.kgrams)))
 
     def __repr__(self):
-        return f"{self.term}#{self.doc_id}#{self.kgrams}"
+        return f"{self.term}#{self.doc_id}#{self.kgrams}\n"
 
 
 class PositionalPosting:
@@ -29,7 +29,7 @@ class PositionalPosting:
         self.positions = positions
 
     def __repr__(self):
-        return f"{self.doc_id}:{self.positions}"
+        return f"{self.doc_id}:{self.positions}\n"
 
 
 class PostingList:
@@ -39,7 +39,7 @@ class PostingList:
         self.postings = postings
 
     def __repr__(self):
-        return f"{self.term}:{self.doc_freq} = {self.postings}"
+        return f"{self.term}:{self.doc_freq} = {self.postings} \n"
 
 
 class IndexBuilder:
@@ -89,6 +89,9 @@ class Index:
     def __init__(self, entries: dict[str, PostingList]):
         self._index = entries
 
+    def __repr__(self):
+        return f"{self._index}\n"
+
     def get_positional_postings(self, term) -> list[PositionalPosting]:
         if term not in self._index:
             return None
@@ -104,30 +107,47 @@ class Index:
 class KGramIndex:
     def __init__(self, term):
         self._term = term
-        self._kgrams = []
+        self._kgrams : list[dict[str, list]] = []
+
+    def __repr__(self):
+        return f"{self._term} : [{self._kgrams}]\n"
 
     # Erstellung k-gramme
-    def build(self, n):
+    def build(self, n: int):
         for i in range(0, len(self._term) - 1):
-            kgram = self._term[i : i + n]
-            if kgram not in self._kgrams and len(kgram) == n:
+            letters = int(i) + int(n) 
+            kgram = self._term[i:+letters]
+            # Überprüfung ob kgramm bereits im Index vorhanden ist
+            if (((len([d for d in self._kgrams if kgram in d])) == 0)  and (len(kgram) == int(n))):
                 self._kgrams.append({"k": kgram, "values": []})
+                print(self._kgrams)
 
-    def setKGramValues(self, termList):
-        for val in range(0, len(termList) - 1):
-            idx = 0
-            for k in self._kgrams:
-                if k in val:
-                    if val not in self._kgrams[idx]["values"]:
-                        self._kgrams[idx]["values"].append(
-                            {"val": val, "lDist": self.computeLevenstheinDistance(val)}
-                        )
-                idx += 1
-            self.orderByLevenstheinDistance()
+    def setKGramValues(self, termList: Index):
+        #for val in range(0, len(termList) - 1):
+        idx = 0
+        for k in self._kgrams:
+            possbileValues = [d for d in termList._index if k["k"] in d]
+            if len(possbileValues) > 0:
+                if possbileValues not in k["values"]:
+                    for val in possbileValues:
+                        # Abfrage zur Länge des Möglichen Terms
+                        if (not (len(val) > (len(self._term) + 3)) and not (len(val) < (len(self._term) - 3))):
+                            k["values"].append({"val": val, "lDist": self.computeLevenstheinDistance(val)})
+            idx += 1
+        self.orderByLevenstheinDistance()
 
     def computeLevenstheinDistance(self, value):
         return lev(self._term, value)
 
     def orderByLevenstheinDistance(self):
-        for i in range(0, len(self._kgrams) - 1):
-            self._kgrams[i]["values"].sort(key=lambda x: x["lDist"])
+        for kgram in self._kgrams:
+            kgram["values"] = sorted(kgram["values"], key=lambda x: x["lDist"])
+
+    def getKGramsWithLowestLDistValue(self):
+        for kgram in self._kgrams:
+            treshhold = 0
+            if len(kgram["values"]) > 0:
+                treshhold = kgram["values"][0]["lDist"]
+                outOfScopes = [d for d in kgram["values"] if d["lDist"] > treshhold ]
+                for outOfScope in outOfScopes:
+                    kgram["values"].remove(outOfScope)
