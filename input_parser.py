@@ -122,7 +122,7 @@ class ProxQuery(Query):
         term1 /4 term2
     """
 
-    def __init__(self, term_a: str, term_b: str, k: int):
+    def __init__(self, term_a: TermQuery, term_b: TermQuery, k: int):
         super().__init__(QueryType.PROX)
         self.term_a = term_a
         self.term_b = term_b

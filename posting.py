@@ -85,38 +85,59 @@ class Posting:
             result.append(listOfAllDocs[j].docId)
             j += 1
         return result
-    
-    @staticmethod
-    # Basic Not merge two lists of IndexTerm objects with Positions and return the result as list
-    def positionalIntersect(list1, list2, k):
-        result = []
+
+    # Advanced Intersect merge two lists of IndexTerm objects and return the result as list
+    # This is the advanced intersect algorithm
+    def advancedIntersect(self, terms):
+        terms = self.sortByTermFrequency(terms)
+        result = terms[0]
+        terms = terms[1:]
         i = 0
         j = 0
-        while i < len(list1) and j < len(list2):
-            if list1[i].doc_id == list2[j].doc_id:
-                liste = []
-                positions1 = list1[i].positions
-                positions2 = list2[j].positions
-                k = 0
-                while k < len(positions1):
-                    l = 0
-                    while l < len(positions2):
-                        if abs(positions1[k] - positions2[l]) <= k:
-                            liste.append(positions2[k])
-                        elif positions2[l] > positions1[k]:
-                            break
-                        l += 1
-                    while liste != [] and abs(liste[0] - positions1[k]) > k:
-                        del liste[0]
-                    for ps in liste:
-                        result.append({list1.doc_id, positions1[k],ps})
-                        k += 1 
-                i += 1
-                j += 1
-            elif list1[i].doc_id < list2[j].doc_id:
-                i += 1
-            else:
-                j += 1
+        while i < len(terms) and j < len(result):
+            # TODO check why list = terms[0]
+            list = terms[0]
+            result = self.advancedIntersect(result, terms[0])
+            terms = terms[1:]
+        return result
+
+    def advancedUnion(self, terms):
+        terms = self.sortByTermFrequency(terms)
+        result = terms[0]
+        terms = terms[1:]
+        i = 0
+        j = 0
+        while i < len(terms) or j < len(result):
+            # TODO check why list = terms[0]
+            list = terms[0]
+            result = self.advancedUnion(result, terms[0])
+            terms = terms[1:]
+        return result
+
+    def advancedAndNot(self, terms):
+        terms = self.sortByTermFrequency(terms)
+        result = terms[0]
+        terms = terms[1:]
+        i = 0
+        j = 0
+        while i < len(terms) and j < len(result):
+            # TODO check why list = terms[0]
+            list = terms[0]
+            result = self.advancedAndNot(result, terms[0])
+            terms = terms[1:]
+        return result
+
+    def advancedOrNot(self, terms):
+        terms = self.sortByTermFrequency(terms)
+        result = terms[0]
+        terms = terms[1:]
+        i = 0
+        j = 0
+        while i < len(terms) and j < len(result):
+            # TODO check why list = terms[0]
+            list = terms[0]
+            result = self.advancedOrNot(result, terms[0])
+            terms = terms[1:]
         return result
 
     # Sort the list of IndexTerm objects by term frequency
@@ -137,5 +158,69 @@ class Posting:
                     positions.append(a + k)
 
         return PositionalPosting(pos_a.doc_id, positions)
-    
-    
+
+    @staticmethod
+    def positional_intersect(
+        p1: list[PositionalPosting], p2: list[PositionalPosting], k: int
+    ) -> list[PositionalPosting]:
+        """
+        Returns the positional intersect of p1 and p2 where the terms are at
+        most k terms apart.
+
+        This function can be used to implement the proximity operator and phrase
+        queries.
+        """
+        answer: list[PositionalPosting] = []
+        i = 0
+        j = 0
+
+        while i < len(p1) and j < len(p2):
+            if p1[i].doc_id == p2[j].doc_id:
+                l = []
+                pp1 = p1[i].positions
+                pp2 = p2[j].positions
+                pp1_i = 0
+
+                while pp1_i < len(pp1):
+                    pp2_i = 0
+                    while pp2_i < len(pp2):
+                        if abs(pp1[pp1_i] - pp2[pp2_i]) <= k:
+                            l.append(pp2[pp2_i])
+                        elif pp2[pp2_i] > pp1[pp1_i]:
+                            break
+                        pp2_i += 1
+                    while l != [] and abs(l[0] - pp1[pp1_i]) > k:
+                        del l[0]
+
+                    answer += [
+                        PositionalPosting(p1[i].doc_id, [pp1[pp1_i], pos]) for pos in l
+                    ]
+                    pp1_i += 1
+
+                i += 1
+                j += 1
+            elif p1[i].doc_id < p2[j].doc_id:
+                i += 1
+            else:
+                j += 1
+
+        return answer
+
+    # Sort the list of IndexTerm objects by term frequency
+    def sortByTermFrequency(self, terms):
+        return sorted(terms, key=lambda k: k.tf, reverse=True)
+
+    @staticmethod
+    def get_k_proximity(
+        k: int, pos_a: PositionalPosting, pos_b: PositionalPosting
+    ) -> PositionalPosting:
+        assert pos_a.doc_id == pos_b.doc_id
+
+        positions = []
+
+        for a in pos_a.positions:
+            for b in pos_b.positions:
+                if abs(b - a) <= k:
+                    positions.append(a + k)
+
+        return PositionalPosting(pos_a.doc_id, positions)

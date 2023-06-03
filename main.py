@@ -65,6 +65,7 @@ def main(query, k, r):
     index = build_index()
 
     for query in and_queries:
+        # TODO: Remove when done
         print(f"DEBUG: {query}")
         # TODO: GROUP and OR queries must be traversed recursively
         #       because GROUP queries can be nested and OR queries
@@ -74,44 +75,71 @@ def main(query, k, r):
         elif query.type == QueryType.OR:
             print("TODO: OR")
         elif query.type == QueryType.PROX:
-            print("TODO: PROX")
+            positional_postings = []
+
+            postings_a = index.get_positional_postings(query.term_a.term)
+            postings_b = index.get_positional_postings(query.term_b.term)
+
+            if postings_a is None or postings_b is None:
+                print(
+                    f"Found 0 matches for proximity query term: {query.term_a.term if postings_a is None else query.term_b.term}"
+                )
+                break
+
+            intersect_postings = Posting.positional_intersect(
+                postings_a, postings_b, query.k
+            )
+
+            if len(intersect_postings) == 0:
+                print(f"Found 0 matches for proximity query: {query}")
+                break
+
+            print(
+                f"Found {len(intersect_postings)} matches for proximity query: {query}"
+            )
+            for posting in intersect_postings:
+                print(f"  {posting.doc_id}: {posting.positions}")
+
         elif query.type == QueryType.PHRASE:
-            print("TODO: PHRASE")
             positional_postings = [
                 index.get_positional_postings(x) for x in query.parts
             ]
 
             if None in positional_postings:
-                print("TODO: NO MATCH")
+                print(f"Found 0 matches for phrase query: {query}")
                 break
 
-            intersect_doc_ids = Posting.positionalIntersect(
-                positional_postings[0], positional_postings[1],k
-            )
-            print("INTERSECT", intersect_doc_ids)
-
-            result: list[PositionalPosting] = []
-
-            for doc_id in intersect_doc_ids:
-                for posting_list in positional_postings:
-                    for positional_posting in posting_list:
-                        if positional_posting.doc_id == doc_id:
-                            result.append(positional_posting)
-
-            print("INTERSECT", intersect_doc_ids)
-            print("RESULT", result)
-
-            new_left = None
-
-            for left, right in zip(result, result[1:]):
-                new_left = Posting.get_k_proximity(
-                    1, new_left if new_left is not None else left, right
+            # Special case single term phrase queries.
+            if len(positional_postings) == 1:
+                print(
+                    f"Found {len(positional_postings[0])} matches for phrase query: {query}"
                 )
-                print(new_left)
+                for posting in positional_postings[0]:
+                    print(f"  {posting.doc_id}: {posting.positions}")
+                break
 
-            # Posting.get_k_proximity(
-            #     1, result[: int(len(result) / 2)], result[int(len(result) / 2) :]
-            # )
+            # Nested function so we can break from the loop by using `return`.
+            def iterate_positional_postings():
+                # Keep track of the start positions of the phrase.
+                starts: list[PositionalPosting] = []
+
+                # Iterate in reverse order to stop at the start of the phrase.
+                right = positional_postings[-1]
+                for left in reversed(positional_postings[:-1]):
+                    intersect_postings = Posting.positional_intersect(left, right, 1)
+                    if len(intersect_postings) == 0:
+                        print(f"Found 0 matches for phrase query: {query}")
+                        return
+
+                    starts = [(x.doc_id, x.positions[0]) for x in intersect_postings]
+                    right = intersect_postings
+                    print(right)
+
+                print(f"Found {len(starts)} matches for phrase query: {query}:")
+                for doc_id, start in starts:
+                    print(f"  {doc_id}: {start}")
+
+            iterate_positional_postings()
 
         elif query.type == QueryType.TERM:
             print("TODO: TERM")
@@ -123,28 +151,35 @@ def main(query, k, r):
                     print("0 Results")
                     # Try to find a similar term
                     posting_list = executeKGramm(query.term, index)
-                    if(posting_list is None or len(posting_list) == 0):
-                        print("Es konnten trotz Rechtschreibkorrektur keine Ergebnisse gefunden werden.")
+                    if posting_list is None or len(posting_list) == 0:
+                        print(
+                            "Es konnten trotz Rechtschreibkorrektur keine Ergebnisse gefunden werden."
+                        )
                     else:
                         for k in posting_list:
-                            if(k is not None):
+                            if k is not None:
                                 print("Ergebnis: ", k)
                             else:
-                                print("Es konnten trotz Rechtschreibkorrektur keine Ergebnisse gefunden werden.")
+                                print(
+                                    "Es konnten trotz Rechtschreibkorrektur keine Ergebnisse gefunden werden."
+                                )
                 else:
                     print("TODO: Output", posting_list)
-                if(posting_list is not None and len(posting_list) < r):
+                if posting_list is not None and len(posting_list) < r:
                     result = executeKGramm(query.term, index)
-                    if(result is None or len(result) == 0):
-                        print("Es konnten trotz Rechtschreibkorrektur keine Ergebnisse gefunden werden.")
+                    if result is None or len(result) == 0:
+                        print(
+                            "Es konnten trotz Rechtschreibkorrektur keine Ergebnisse gefunden werden."
+                        )
                     else:
                         for k in result:
-                            if(k is not None):
+                            if k is not None:
                                 print("Ergebnis: ", k)
                             else:
-                                print("Es konnten trotz Rechtschreibkorrektur keine Ergebnisse gefunden werden.")
-                        
-        
+                                print(
+                                    "Es konnten trotz Rechtschreibkorrektur keine Ergebnisse gefunden werden."
+                                )
+
 
 def get_posting_list(query, posting):
     posting_list = []
@@ -155,6 +190,7 @@ def get_posting_list(query, posting):
 
 def computeJaccardCoeffcient(itersectionList, unionList):
     return len(itersectionList) / (len(unionList) - len(itersectionList))
+
 
 # Rechtschreibkorrektur wird nur angewandt, wenn weniger als r Ergebnisse vorliegen
 def executeKGramm(term: str, index: Index):
@@ -174,8 +210,7 @@ def executeKGramm(term: str, index: Index):
         for obj in kgram["values"]:
             kgramResultList.append(index.get_positional_postings(obj["val"]))
         resultLists.append(kgramResultList)
-    return resultLists;
-
+    return resultLists
 
 
 if __name__ == "__main__":
