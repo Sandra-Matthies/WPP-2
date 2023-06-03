@@ -122,11 +122,28 @@ def main(query, k, r):
                 if posting_list is None:
                     print("0 Results")
                     # Try to find a similar term
-                    executeKGramm(query.term, index)
+                    posting_list = executeKGramm(query.term, index)
+                    if(posting_list is None or len(posting_list) == 0):
+                        print("Es konnten trotz Rechtschreibkorrektur keine Ergebnisse gefunden werden.")
+                    else:
+                        for k in posting_list:
+                            if(k is not None):
+                                print("Ergebnis: ", k)
+                            else:
+                                print("Es konnten trotz Rechtschreibkorrektur keine Ergebnisse gefunden werden.")
                 else:
                     print("TODO: Output", posting_list)
                 if(posting_list is not None and len(posting_list) < r):
-                    executeKGramm(query.term, index)
+                    result = executeKGramm(query.term, index)
+                    if(result is None or len(result) == 0):
+                        print("Es konnten trotz Rechtschreibkorrektur keine Ergebnisse gefunden werden.")
+                    else:
+                        for k in result:
+                            if(k is not None):
+                                print("Ergebnis: ", k)
+                            else:
+                                print("Es konnten trotz Rechtschreibkorrektur keine Ergebnisse gefunden werden.")
+                        
         
 
 def get_posting_list(query, posting):
@@ -151,15 +168,13 @@ def executeKGramm(term: str, index: Index):
     # verwende die kgramme mit dem niedrigsten lDist Wert
     kGramIndex.getKGramsWithLowestLDistValue()
     # hole die Postinglisten für die kgramme
-    print("KGramme mit niedrigstem lDist Wert: ", kGramIndex)
     resultLists = []
     for kgram in kGramIndex._kgrams:
         kgramResultList = []
         for obj in kgram["values"]:
             kgramResultList.append(index.get_positional_postings(obj["val"]))
-            print("Postingliste für ", obj["val"], ": ", index.get_positional_postings(obj["val"]))
         resultLists.append(kgramResultList)
-    print("resultLists: ", resultLists)
+    return resultLists;
 
 
 
