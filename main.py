@@ -9,7 +9,15 @@ import click
 
 import tokenizer
 from index import Index, IndexBuilder, IndexTerm, KGramIndex, PositionalPosting
-from input_parser import GroupQuery, PhraseQuery, ProxQuery, Query, QueryType, TermQuery, parse
+from input_parser import (
+    GroupQuery,
+    PhraseQuery,
+    ProxQuery,
+    Query,
+    QueryType,
+    TermQuery,
+    parse,
+)
 from posting import Posting
 
 
@@ -55,11 +63,30 @@ def build_index() -> Index:
 def parse_query(query) -> list[Query]:
     return parse(query)
 
+
 def getOrQueryTerms(query) -> list[Query]:
     queryList = []
     for term in query.split(" "):
         queryList.append(Query(term, QueryType.OR))
     return queryList
+
+
+def get_doc_ids(postings: list[PositionalPosting]) -> list[int]:
+    """
+    Converts a list of positional postings to a list of their respective doc
+    IDs.
+    """
+    return [x.doc_id for x in postings]
+
+
+def intersect_many(list_of_doc_ids: list[list[int]]) -> list[int]:
+    result_doc_ids = list_of_doc_ids[0]
+
+    for right in list_of_doc_ids[1:]:
+        result_doc_ids = Posting.intersect(result_doc_ids, right)
+
+    return result_doc_ids
+
 
 @click.command()
 @click.option("-q", "--query", help="Boolean query to search for.", required=True)
@@ -86,8 +113,7 @@ def main(query, k, r):
         eprint("MAIN", f'Handle AND query part "{query}"')
         result_doc_ids: list[int] = []
         if query.type == QueryType.GROUP:
-           res = handle_group(index, query, k, r)
-           result_doc_ids=res[0]
+            result_doc_ids = handle_group(index, query, k, r)
         elif query.type == QueryType.OR:
             # We expect OR queries to only consist of two, non-nested parts.
             def handle_part(query: Query) -> list[int]:
@@ -97,7 +123,7 @@ def main(query, k, r):
                     return handle_phrase(index, query)
                 elif query.type == QueryType.PROX:
                     return handle_prox(index, query)
-            
+
             left = handle_part(query.parts[0])
             right = handle_part(query.parts[1])
             union = Posting.union(left, right)
@@ -120,16 +146,15 @@ def main(query, k, r):
         eprint("MAIN", f'Found 0 matches for total query "{query}"')
         return
 
-    result_doc_ids = and_query_result_doc_ids[0]
-
-    for right in and_query_result_doc_ids[1:]:
-        result_doc_ids = Posting.intersect(result_doc_ids, right)
+    result_doc_ids = intersect_many(and_query_result_doc_ids)
 
     if len(result_doc_ids) == 0:
         eprint("MAIN", f'Found 0 matches for total query "{totalQuery}"')
         return
 
-    eprint("MAIN", f'Found {len(result_doc_ids)} matches for total query "{totalQuery}"')
+    eprint(
+        "MAIN", f'Found {len(result_doc_ids)} matches for total query "{totalQuery}"'
+    )
 
     # Print the result to stdout so it could be used in pipes without the log
     # messages.
@@ -159,7 +184,7 @@ def handle_prox(index: Index, query: ProxQuery) -> list[int]:
         "PROX", f'Found {len(intersect_postings)} matches for proximity query "{query}"'
     )
 
-    return [x.doc_id for x in intersect_postings]
+    return get_doc_ids(intersect_postings)
 
 
 def handle_phrase(index: Index, query: PhraseQuery) -> list[int]:
@@ -177,7 +202,7 @@ def handle_phrase(index: Index, query: PhraseQuery) -> list[int]:
             "PHRASE",
             f'Found {len(positional_postings[0])} matches for phrase query "{query}"',
         )
-        return [x.doc_id for x in positional_postings[0]]
+        return get_doc_ids(positional_postings[0])
 
     # Nested function so we can break from the loop by using `return`.
     def iterate_positional_postings() -> list[int]:
@@ -213,26 +238,36 @@ def handle_term(index: Index, query: TermQuery, k: int, r: int) -> list[int]:
 
     return use_spell_checker(query.term, index, k)
 
+
 def handle_group(index: Index, query: GroupQuery, k: int, r: int) -> list[int]:
-    eprint("GROUP", f'Handle group query "{query}"')    
+    eprint("GROUP", f'Handle group query "{query}"')
+
     def handle_part(query: Query) -> list[int]:
-                if query.type == QueryType.TERM:
-                    return handle_term(index, query, k, r)
-                elif query.type == QueryType.PHRASE:
-                    return handle_phrase(index, query)
-                elif query.type == QueryType.PROX:
-                    return handle_prox(index, query)
-                elif query.type == QueryType.GROUP:
-                    return handle_group(index, query, k, r)
-                elif query.type == QueryType.OR:
-                    left = handle_part(query.parts[0])
-                    right = handle_part(query.parts[1])
-                    union = Posting.union(left, right)
-                    return union
+        if query.type == QueryType.TERM:
+            return handle_term(index, query, k, r)
+        elif query.type == QueryType.PHRASE:
+            return handle_phrase(index, query)
+        elif query.type == QueryType.PROX:
+            return handle_prox(index, query)
+        elif query.type == QueryType.GROUP:
+            return handle_group(index, query, k, r)
+        elif query.type == QueryType.OR:
+            left = handle_part(query.parts[0])
+            right = handle_part(query.parts[1])
+            union = Posting.union(left, right)
+            return union
+
     results = []
     for q in query.and_queries:
         results.append(handle_part(q))
+
+    # Same handling as in `main` because GROUP queries can consist of multiple
+    # AND queries.
+    results = intersect_many(results)
+    eprint("GROUP", f'Found {len(results)} documents for query "{query}"')
+
     return results
+
 
 def get_posting_list(query, posting):
     posting_list = []
