@@ -84,6 +84,8 @@ def main(query, k, r):
 
     for query in and_queries:
         eprint("MAIN", f'Handle AND query part "{query}"')
+        result_doc_ids: list[int] = []
+
         if query.type == QueryType.GROUP:
            res = handle_group(index, query, k, r)
            and_query_result_doc_ids.append(res[0])
@@ -100,33 +102,39 @@ def main(query, k, r):
             left = handle_part(query.parts[0])
             right = handle_part(query.parts[1])
             union = Posting.union(left, right)
-            and_query_result_doc_ids.append(union)
+            result_doc_ids = union
         elif query.type == QueryType.PROX:
-            and_query_result_doc_ids.append(handle_prox(index, query))
+            result_doc_ids = handle_prox(index, query)
         elif query.type == QueryType.PHRASE:
-            and_query_result_doc_ids.append(handle_phrase(index, query))
+            result_doc_ids = handle_phrase(index, query)
         elif query.type == QueryType.TERM:
-            and_query_result_doc_ids.append(handle_term(index, query, k, r))
-            
+            result_doc_ids = handle_term(index, query, k, r)
+
+        if query.is_not:
+            inverted = Posting.Not(result_doc_ids, index.doc_ids)
+            eprint("NOT", f'Found {len(inverted)} documents for NOT query "{query}"')
+            and_query_result_doc_ids.append(inverted)
+        else:
+            and_query_result_doc_ids.append(result_doc_ids)
 
     if len(and_query_result_doc_ids) == 0:
         eprint("MAIN", f'Found 0 matches for total query "{query}"')
         return
 
-    result = and_query_result_doc_ids[0]
+    result_doc_ids = and_query_result_doc_ids[0]
 
     for right in and_query_result_doc_ids[1:]:
-        result = Posting.intersect(result, right)
+        result_doc_ids = Posting.intersect(result_doc_ids, right)
 
-    if len(result) == 0:
-        eprint("MAIN", f'Found 0 matches for total query "{totalQuery}"')
+    if len(result_doc_ids) == 0:
+        eprint("MAIN", f'Found 0 matches for total query "{query}"')
         return
 
-    eprint("MAIN", f'Found {len(result)} matches for total query "{totalQuery}"')
+    eprint("MAIN", f'Found {len(result_doc_ids)} matches for total query "{query}"')
 
     # Print the result to stdout so it could be used in pipes without the log
     # messages.
-    for doc_id in result:
+    for doc_id in result_doc_ids:
         print(doc_id)
 
 
@@ -197,18 +205,14 @@ def handle_phrase(index: Index, query: PhraseQuery) -> list[int]:
 def handle_term(index: Index, query: TermQuery, k: int, r: int) -> list[int]:
     eprint("TERM", f'Handle term "{query.term}"')
 
-    if query.is_not:
-        # TODO
-        return []
-    else:
-        posting_list = index.get_positional_postings(query.term)
+    posting_list = index.get_positional_postings(query.term)
 
-        if len(posting_list) >= r:
-            return [x.doc_id for x in posting_list]
+    if len(posting_list) >= r:
+        return [x.doc_id for x in posting_list]
 
-        eprint("TERM", f'Found less than r={r} documents for term "{query.term}"')
+    eprint("TERM", f'Found less than r={r} documents for term "{query.term}"')
 
-        return use_spell_checker(query.term, index, k)
+    return use_spell_checker(query.term, index, k)
 
 def handle_group(index: Index, query: GroupQuery, k: int, r: int) -> list[int]:
     eprint("GROUP", f'Handle group query "{query}"')

@@ -88,6 +88,15 @@ class IndexBuilder:
 class Index:
     def __init__(self, entries: dict[str, PostingList]):
         self._index = entries
+        self.doc_ids = sorted(
+            set(
+                [
+                    postings.doc_id
+                    for posting_list in entries.values()
+                    for postings in posting_list.postings
+                ]
+            )
+        )
 
     def __repr__(self):
         return f"{self._index}\n"
