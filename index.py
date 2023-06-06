@@ -94,7 +94,7 @@ class Index:
 
     def get_positional_postings(self, term: str) -> list[PositionalPosting]:
         if term not in self._index:
-            return None
+            return []
         return sorted(self._index[term].postings, key=lambda k: k.doc_id)
 
 
@@ -122,7 +122,6 @@ class KGramIndex:
                 len(kgram) == int(n)
             ):
                 self._kgrams.append({"k": kgram, "values": []})
-                print(self._kgrams)
 
     def setKGramValues(self, termList: Index):
         # for val in range(0, len(termList) - 1):
