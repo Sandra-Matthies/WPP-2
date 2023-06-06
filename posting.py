@@ -11,9 +11,9 @@ class Posting:
     @staticmethod
     # Basic Insersect merge two lists of IndexTerm objects and return the result as list
     def intersect(
-        list1: list[PositionalPosting], list2: list[PositionalPosting]
+        p1: list[int], p2: list[int]
     ) -> list[int]:
-        list1, list2 = swapListIfSecondIsSmaller(list1, list2)
+        p1, p2 = swapListIfSecondIsSmaller(p1, p2)
         result = []
         i = 0
         j = 0

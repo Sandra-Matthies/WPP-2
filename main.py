@@ -9,7 +9,7 @@ import click
 
 import tokenizer
 from index import Index, IndexBuilder, IndexTerm, KGramIndex, PositionalPosting
-from input_parser import PhraseQuery, ProxQuery, Query, QueryType, TermQuery, parse
+from input_parser import GroupQuery, PhraseQuery, ProxQuery, Query, QueryType, TermQuery, parse
 from posting import Posting
 
 
@@ -76,6 +76,7 @@ def getOrQueryTerms(query) -> list[Query]:
     default=3,
 )
 def main(query, k, r):
+    totalQuery = query
     and_queries = parse_query(query)
     and_query_result_doc_ids: list[list[int]] = []
 
@@ -84,8 +85,8 @@ def main(query, k, r):
     for query in and_queries:
         eprint("MAIN", f'Handle AND query part "{query}"')
         if query.type == QueryType.GROUP:
-            # TODO
-            assert 1 == 2
+           res = handle_group(index, query, k, r)
+           and_query_result_doc_ids.append(res[0])
         elif query.type == QueryType.OR:
             # We expect OR queries to only consist of two, non-nested parts.
             def handle_part(query: Query) -> list[int]:
@@ -95,7 +96,7 @@ def main(query, k, r):
                     return handle_phrase(index, query)
                 elif query.type == QueryType.PROX:
                     return handle_prox(index, query)
-
+            
             left = handle_part(query.parts[0])
             right = handle_part(query.parts[1])
             union = Posting.union(left, right)
@@ -106,6 +107,7 @@ def main(query, k, r):
             and_query_result_doc_ids.append(handle_phrase(index, query))
         elif query.type == QueryType.TERM:
             and_query_result_doc_ids.append(handle_term(index, query, k, r))
+            
 
     if len(and_query_result_doc_ids) == 0:
         eprint("MAIN", f'Found 0 matches for total query "{query}"')
@@ -117,10 +119,10 @@ def main(query, k, r):
         result = Posting.intersect(result, right)
 
     if len(result) == 0:
-        eprint("MAIN", f'Found 0 matches for total query "{query}"')
+        eprint("MAIN", f'Found 0 matches for total query "{totalQuery}"')
         return
 
-    eprint("MAIN", f'Found {len(result)} matches for total query "{query}"')
+    eprint("MAIN", f'Found {len(result)} matches for total query "{totalQuery}"')
 
     # Print the result to stdout so it could be used in pipes without the log
     # messages.
@@ -208,6 +210,28 @@ def handle_term(index: Index, query: TermQuery, k: int, r: int) -> list[int]:
 
         return use_spell_checker(query.term, index, k)
 
+def handle_group(index: Index, query: GroupQuery, k: int, r: int) -> list[int]:
+    eprint("GROUP", f'Handle group query "{query}"')
+    print(query.and_queries)
+    
+    def handle_part(query: Query) -> list[int]:
+                if query.type == QueryType.TERM:
+                    return handle_term(index, query, k, r)
+                elif query.type == QueryType.PHRASE:
+                    return handle_phrase(index, query)
+                elif query.type == QueryType.PROX:
+                    return handle_prox(index, query)
+                elif query.type == QueryType.GROUP:
+                    return handle_group(index, query, k, r)
+                elif query.type == QueryType.OR:
+                    left = handle_part(query.parts[0])
+                    right = handle_part(query.parts[1])
+                    union = Posting.union(left, right)
+                    return union
+    results = []
+    for q in query.and_queries:
+        results.append(handle_part(q))
+    return results
 
 def get_posting_list(query, posting):
     posting_list = []
