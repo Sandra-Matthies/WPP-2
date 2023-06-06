@@ -32,6 +32,7 @@ class Posting:
 
     @staticmethod
     def union(p1: list[int], p2: list[int]) -> list[int]:
+        p1, p2 = swapListIfSecondIsSmaller(p1, p2)
         """
         Basic union that combines two lists of doc_ids and returns
         their union.
