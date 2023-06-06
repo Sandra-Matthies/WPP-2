@@ -85,10 +85,9 @@ def main(query, k, r):
     for query in and_queries:
         eprint("MAIN", f'Handle AND query part "{query}"')
         result_doc_ids: list[int] = []
-
         if query.type == QueryType.GROUP:
            res = handle_group(index, query, k, r)
-           and_query_result_doc_ids.append(res[0])
+           result_doc_ids=res[0]
         elif query.type == QueryType.OR:
             # We expect OR queries to only consist of two, non-nested parts.
             def handle_part(query: Query) -> list[int]:
@@ -127,10 +126,10 @@ def main(query, k, r):
         result_doc_ids = Posting.intersect(result_doc_ids, right)
 
     if len(result_doc_ids) == 0:
-        eprint("MAIN", f'Found 0 matches for total query "{query}"')
+        eprint("MAIN", f'Found 0 matches for total query "{totalQuery}"')
         return
 
-    eprint("MAIN", f'Found {len(result_doc_ids)} matches for total query "{query}"')
+    eprint("MAIN", f'Found {len(result_doc_ids)} matches for total query "{totalQuery}"')
 
     # Print the result to stdout so it could be used in pipes without the log
     # messages.
@@ -215,9 +214,7 @@ def handle_term(index: Index, query: TermQuery, k: int, r: int) -> list[int]:
     return use_spell_checker(query.term, index, k)
 
 def handle_group(index: Index, query: GroupQuery, k: int, r: int) -> list[int]:
-    eprint("GROUP", f'Handle group query "{query}"')
-    print(query.and_queries)
-    
+    eprint("GROUP", f'Handle group query "{query}"')    
     def handle_part(query: Query) -> list[int]:
                 if query.type == QueryType.TERM:
                     return handle_term(index, query, k, r)
