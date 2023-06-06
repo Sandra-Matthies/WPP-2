@@ -9,8 +9,19 @@ import click
 
 import tokenizer
 from index import Index, IndexBuilder, IndexTerm, KGramIndex, PositionalPosting
-from input_parser import Query, QueryType, parse
+from input_parser import PhraseQuery, ProxQuery, Query, QueryType, TermQuery, parse
 from posting import Posting
+
+
+def eprint(category: str, text: str):
+    """
+    Prints `text` to stderr. If `category` is not empty, it will be used as a
+    prefix.
+    """
+    if category == "":
+        print(text, file=sys.stderr)
+    else:
+        print(f"[{category}]: {text}", file=sys.stderr)
 
 
 def measure_time(func):
@@ -22,7 +33,7 @@ def measure_time(func):
         start = time.time()
         result = func(*args, **kwargs)
         end = time.time()
-        print(f"TIME [{func.__name__}]: {end - start} seconds.", file=sys.stderr)
+        eprint("TIME", f"{func.__name__}: {end - start} seconds.")
         return result
 
     return wrapper
@@ -66,142 +77,136 @@ def getOrQueryTerms(query) -> list[Query]:
 )
 def main(query, k, r):
     and_queries = parse_query(query)
+    and_query_result_doc_ids: list[list[int]] = []
 
     index = build_index()
 
     for query in and_queries:
-        # TODO: Remove when done
-        print(f"DEBUG: {query}")
-        # TODO: GROUP and OR queries must be traversed recursively
-        #       because GROUP queries can be nested and OR queries
-        #       can contain GROUP queries.
+        eprint("MAIN", f'Handle AND query part "{query}"')
         if query.type == QueryType.GROUP:
-            print("TODO: GROUP")
+            # TODO
+            assert 1 == 2
         elif query.type == QueryType.OR:
-            print("TODO: OR")
-            print(query.parts)
-            postings_a = None
-            postings_b = None
-            postings_a=index.get_positional_postings(query.parts[0].term)
-            postings_b=index.get_positional_postings(query.parts[1].term)
-            resultList = None
-            # Only works if the structure is term OR term (max 2 terms)
-            if postings_a is not None and postings_b is not None:
-                resultList = Posting.union(postings_a, postings_b)
-            elif postings_a is not None:
-                resultList = postings_a
-            elif postings_b is not None:
-                resultList = postings_b
-            else:
-                print("Found 0 matches for OR query")
-                break
-            print(f"Found {len(resultList)} matches for OR query: {query}")
+            # We expect OR queries to only consist of two, non-nested parts.
+            def handle_part(query: Query) -> list[int]:
+                if query.type == QueryType.TERM:
+                    return handle_term(index, query, k, r)
+                elif query.type == QueryType.PHRASE:
+                    return handle_phrase(index, query)
+                elif query.type == QueryType.PROX:
+                    return handle_prox(index, query)
 
+            left = handle_part(query.parts[0])
+            right = handle_part(query.parts[1])
+            union = Posting.union(left, right)
+            and_query_result_doc_ids.append(union)
         elif query.type == QueryType.PROX:
-            positional_postings = []
-
-            postings_a = index.get_positional_postings(query.term_a.term)
-            postings_b = index.get_positional_postings(query.term_b.term)
-
-            if postings_a is None or postings_b is None:
-                print(
-                    f"Found 0 matches for proximity query term: {query.term_a.term if postings_a is None else query.term_b.term}"
-                )
-                break
-
-            intersect_postings = Posting.positional_intersect(
-                postings_a, postings_b, query.k
-            )
-
-            if len(intersect_postings) == 0:
-                print(f"Found 0 matches for proximity query: {query}")
-                break
-
-            print(
-                f"Found {len(intersect_postings)} matches for proximity query: {query}"
-            )
-            for posting in intersect_postings:
-                print(f"  {posting.doc_id}: {posting.positions}")
-
+            and_query_result_doc_ids.append(handle_prox(index, query))
         elif query.type == QueryType.PHRASE:
-            positional_postings = [
-                index.get_positional_postings(x) for x in query.parts
-            ]
-
-            if None in positional_postings:
-                print(f"Found 0 matches for phrase query: {query}")
-                break
-
-            # Special case single term phrase queries.
-            if len(positional_postings) == 1:
-                print(
-                    f"Found {len(positional_postings[0])} matches for phrase query: {query}"
-                )
-                for posting in positional_postings[0]:
-                    print(f"  {posting.doc_id}: {posting.positions}")
-                break
-
-            # Nested function so we can break from the loop by using `return`.
-            def iterate_positional_postings():
-                # Keep track of the start positions of the phrase.
-                starts: list[PositionalPosting] = []
-
-                # Iterate in reverse order to stop at the start of the phrase.
-                right = positional_postings[-1]
-                for left in reversed(positional_postings[:-1]):
-                    intersect_postings = Posting.positional_intersect(left, right, 1)
-                    if len(intersect_postings) == 0:
-                        print(f"Found 0 matches for phrase query: {query}")
-                        return
-
-                    starts = [(x.doc_id, x.positions[0]) for x in intersect_postings]
-                    right = intersect_postings
-                    print(right)
-
-                print(f"Found {len(starts)} matches for phrase query: {query}:")
-                for doc_id, start in starts:
-                    print(f"  {doc_id}: {start}")
-
-            iterate_positional_postings()
-
+            and_query_result_doc_ids.append(handle_phrase(index, query))
         elif query.type == QueryType.TERM:
-            print("TODO: TERM")
-            if query.is_not:
-                print("TODO: NOT")
-            else:
-                posting_list = index.get_positional_postings(query.term)
-                if posting_list is None:
-                    print("0 Results")
-                    # Try to find a similar term
-                    posting_list = executeKGramm(query.term, index)
-                    if posting_list is None or len(posting_list) == 0:
-                        print(
-                            "Es konnten trotz Rechtschreibkorrektur keine Ergebnisse gefunden werden."
-                        )
-                    else:
-                        for k in posting_list:
-                            if k is not None:
-                                print("Ergebnis: ", k)
-                            else:
-                                print(
-                                    "Es konnten trotz Rechtschreibkorrektur keine Ergebnisse gefunden werden."
-                                )
-                else:
-                    print("TODO: Output", posting_list)
-                if posting_list is not None and len(posting_list) < r:
-                    result = executeKGramm(query.term, index)
-                    if result is None or len(result) == 0:
-                        print(
-                            "Es konnten trotz Rechtschreibkorrektur keine Ergebnisse gefunden werden."
-                        )
-                    else:
-                        for k in result:
-                            if k is not None:
-                                print("Ergebnis: ", k)
-                            else:
-                                print(
-                                    "Es konnten trotz Rechtschreibkorrektur keine Ergebnisse gefunden werden."
-                                )
+            and_query_result_doc_ids.append(handle_term(index, query, k, r))
+
+    if len(and_query_result_doc_ids) == 0:
+        eprint("MAIN", f'Found 0 matches for total query "{query}"')
+        return
+
+    result = and_query_result_doc_ids[0]
+
+    for right in and_query_result_doc_ids[1:]:
+        result = Posting.intersect(result, right)
+
+    if len(result) == 0:
+        eprint("MAIN", f'Found 0 matches for total query "{query}"')
+        return
+
+    eprint("MAIN", f'Found {len(result)} matches for total query "{query}"')
+
+    # Print the result to stdout so it could be used in pipes without the log
+    # messages.
+    for doc_id in result:
+        print(doc_id)
+
+
+def handle_prox(index: Index, query: ProxQuery) -> list[int]:
+    eprint("PROX", f'Handle proximity query "{query}"')
+
+    postings_a = index.get_positional_postings(query.term_a.term)
+    postings_b = index.get_positional_postings(query.term_b.term)
+
+    if postings_a is None or postings_b is None:
+        eprint(
+            f'Found 0 matches for proximity query term "{query.term_a.term if postings_a is None else query.term_b.term}"'
+        )
+        return []
+
+    intersect_postings = Posting.positional_intersect(postings_a, postings_b, query.k)
+
+    if len(intersect_postings) == 0:
+        eprint("PROX", f'Found 0 matches for proximity query "{query}"')
+        return []
+
+    eprint(
+        "PROX", f'Found {len(intersect_postings)} matches for proximity query "{query}"'
+    )
+
+    return [x.doc_id for x in intersect_postings]
+
+
+def handle_phrase(index: Index, query: PhraseQuery) -> list[int]:
+    eprint("PHRASE", f'Handle phrase query "{query}"')
+
+    positional_postings = [index.get_positional_postings(x) for x in query.parts]
+
+    if None in positional_postings:
+        eprint("PHRASE", f'Found 0 matches for phrase query "{query}"')
+        return []
+
+    # Special case single term phrase queries.
+    if len(positional_postings) == 1:
+        eprint(
+            "PHRASE",
+            f'Found {len(positional_postings[0])} matches for phrase query "{query}"',
+        )
+        return [x.doc_id for x in positional_postings[0]]
+
+    # Nested function so we can break from the loop by using `return`.
+    def iterate_positional_postings() -> list[int]:
+        doc_ids: set[int] = set()
+
+        # Iterate in reverse order to stop at the start of the phrase.
+        right = positional_postings[-1]
+        for left in reversed(positional_postings[:-1]):
+            intersect_postings = Posting.positional_intersect(left, right, 1)
+            if len(intersect_postings) == 0:
+                eprint("PHRASE", f'Found 0 matches for phrase query "{query}"')
+                return []
+
+            for posting in intersect_postings:
+                doc_ids.add(posting.doc_id)
+
+            right = intersect_postings
+
+        return list(sorted(doc_ids))
+
+    return iterate_positional_postings()
+
+
+def handle_term(index: Index, query: TermQuery, k: int, r: int) -> list[int]:
+    eprint("TERM", f'Handle term "{query.term}"')
+
+    if query.is_not:
+        # TODO
+        return []
+    else:
+        posting_list = index.get_positional_postings(query.term)
+
+        if len(posting_list) >= r:
+            return [x.doc_id for x in posting_list]
+
+        eprint("TERM", f'Found less than r={r} documents for term "{query.term}"')
+
+        return use_spell_checker(query.term, index, k)
 
 
 def get_posting_list(query, posting):
@@ -215,25 +220,34 @@ def computeJaccardCoeffcient(itersectionList, unionList):
     return len(itersectionList) / (len(unionList) - len(itersectionList))
 
 
-# Rechtschreibkorrektur wird nur angewandt, wenn weniger als r Ergebnisse vorliegen
-def executeKGramm(term: str, index: Index):
-    numberOfLetters = input("Wie Groß soll ein kgramm sein? ")
-    start = time.time()
-    kGramIndex = KGramIndex(term)
-    kGramIndex.build(numberOfLetters)
-    kGramIndex.setKGramValues(index)
-    end = time.time()
-    print(f"k-gram Index built in {end - start} seconds.")
+def use_spell_checker(term: str, index: Index, k: int) -> list[int]:
+    @measure_time
+    def build_k_gram_index():
+        k_gram_index = KGramIndex(term)
+        k_gram_index.build(k)
+        k_gram_index.setKGramValues(index)
+        return k_gram_index
+
+    eprint("SPELL", f'Spell checker uses k-gram index with k={k} for term "{term}"')
+
+    k_gram_index = build_k_gram_index()
+
     # verwende die kgramme mit dem niedrigsten lDist Wert
-    kGramIndex.getKGramsWithLowestLDistValue()
+    k_gram_index.getKGramsWithLowestLDistValue()
+
     # hole die Postinglisten für die kgramme
-    resultLists = []
-    for kgram in kGramIndex._kgrams:
+    results: list[list[PositionalPosting]] = []
+    for kgram in k_gram_index._kgrams:
         kgramResultList = []
         for obj in kgram["values"]:
-            kgramResultList.append(index.get_positional_postings(obj["val"]))
-        resultLists.append(kgramResultList)
-    return resultLists
+            kgramResultList += index.get_positional_postings(obj["val"])
+        results.append(kgramResultList)
+
+    doc_ids = [posting.doc_id for posting_list in results for posting in posting_list]
+    doc_ids = list(sorted(set(doc_ids)))
+
+    eprint("SPELL", f'Found {len(doc_ids)} documents for term "{term}"')
+    return doc_ids
 
 
 if __name__ == "__main__":

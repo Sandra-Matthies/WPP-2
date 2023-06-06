@@ -17,39 +17,46 @@ class Posting:
         result = []
         i = 0
         j = 0
-        while i < len(list1) and j < len(list2):
-            if list1[i].doc_id == list2[j].doc_id:
-                result.append(list1[i].doc_id)
+
+        while i < len(p1) and j < len(p2):
+            if p1[i] == p2[j]:
+                result.append(p1[i])
                 i += 1
                 j += 1
-            elif list1[i].doc_id < list2[j].doc_id:
+            elif p1[i] < p2[j]:
                 i += 1
             else:
                 j += 1
+
         return result
 
-    # Basic Union merge two lists of IndexTerm objects and return the result as list
-    def union(list1:list[PositionalPosting], list2:list[PositionalPosting]) -> list[int]:
-        list1, list2 = swapListIfSecondIsSmaller(list1, list2)
-        result = []
+    @staticmethod
+    def union(p1: list[int], p2: list[int]) -> list[int]:
+        """
+        Basic union that combines two lists of doc_ids and returns
+        their union.
+        """
+        result: list[int] = []
         i = 0
         j = 0
-        while i < len(list1) and j < len(list2):
-            if list1[i].doc_id == list2[j].doc_id:
-                result.append(list1[i].doc_id)
+
+        while i < len(p1) and j < len(p2):
+            if p1[i] == p2[j]:
+                result.append(p1[i])
                 i += 1
                 j += 1
-            elif list1[i].doc_id < list2[j].doc_id:
-                result.append(list1[i].doc_id)
+            elif p1[i] < p2[j]:
+                result.append(p1[i])
                 i += 1
             else:
-                result.append(list2[j].doc_id)
+                result.append(p2[j])
                 j += 1
 
-        while j < len(list2):
-            result.append(list2[j].doc_id)
-            j += 1
-        print(result)
+        if i < len(p1):
+            result += [p for p in p1[i:]]
+        elif j < len(p2):
+            result += [p for p in p2[j:]]
+
         return result
 
     # Basic AND_Not merge two lists of IndexTerm objects and return the result as list
