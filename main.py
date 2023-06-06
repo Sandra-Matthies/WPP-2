@@ -44,6 +44,11 @@ def build_index() -> Index:
 def parse_query(query) -> list[Query]:
     return parse(query)
 
+def getOrQueryTerms(query) -> list[Query]:
+    queryList = []
+    for term in query.split(" "):
+        queryList.append(Query(term, QueryType.OR))
+    return queryList
 
 @click.command()
 @click.option("-q", "--query", help="Boolean query to search for.", required=True)
@@ -74,6 +79,24 @@ def main(query, k, r):
             print("TODO: GROUP")
         elif query.type == QueryType.OR:
             print("TODO: OR")
+            print(query.parts)
+            postings_a = None
+            postings_b = None
+            postings_a=index.get_positional_postings(query.parts[0].term)
+            postings_b=index.get_positional_postings(query.parts[1].term)
+            resultList = None
+            # Only works if the structure is term OR term (max 2 terms)
+            if postings_a is not None and postings_b is not None:
+                resultList = Posting.union(postings_a, postings_b)
+            elif postings_a is not None:
+                resultList = postings_a
+            elif postings_b is not None:
+                resultList = postings_b
+            else:
+                print("Found 0 matches for OR query")
+                break
+            print(f"Found {len(resultList)} matches for OR query: {query}")
+
         elif query.type == QueryType.PROX:
             positional_postings = []
 

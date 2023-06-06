@@ -13,6 +13,7 @@ class Posting:
     def intersect(
         list1: list[PositionalPosting], list2: list[PositionalPosting]
     ) -> list[int]:
+        list1, list2 = swapListIfSecondIsSmaller(list1, list2)
         result = []
         i = 0
         j = 0
@@ -28,61 +29,68 @@ class Posting:
         return result
 
     # Basic Union merge two lists of IndexTerm objects and return the result as list
-    def union(self, list1, list2):
-        result = []
-        i = 0
-        j = 0
-        while i < len(list1) or j < len(list2):
-            if list1[i].docId == list2[j].docId:
-                result.append(list1[i].docId)
-                i += 1
-                j += 1
-            elif list1[i].docId < list2[j].docId:
-                result.append(list1[i].docId)
-                i += 1
-            else:
-                result.append(list2[j].docId)
-                j += 1
-        return result
-
-    # Basic AND_Not merge two lists of IndexTerm objects and return the result as list
-    def andNot(self, list1, list2):
+    def union(list1:list[PositionalPosting], list2:list[PositionalPosting]) -> list[int]:
+        list1, list2 = swapListIfSecondIsSmaller(list1, list2)
         result = []
         i = 0
         j = 0
         while i < len(list1) and j < len(list2):
-            if list1[i].docId == list2[j].docId:
+            if list1[i].doc_id == list2[j].doc_id:
+                result.append(list1[i].doc_id)
                 i += 1
                 j += 1
-            elif list1[i].docId < list2[j].docId:
-                result.append(list1[i].docId)
+            elif list1[i].doc_id < list2[j].doc_id:
+                result.append(list1[i].doc_id)
+                i += 1
+            else:
+                result.append(list2[j].doc_id)
+                j += 1
+
+        while j < len(list2):
+            result.append(list2[j].doc_id)
+            j += 1
+        print(result)
+        return result
+
+    # Basic AND_Not merge two lists of IndexTerm objects and return the result as list
+    def andNot( list1:list[PositionalPosting], list2:list[PositionalPosting]):
+        list1, list2 = swapListIfSecondIsSmaller(list1, list2)
+        result = []
+        i = 0
+        j = 0
+        while i < len(list1) and j < len(list2):
+            if list1[i].doc_id == list2[j].doc_id:
+                i += 1
+                j += 1
+            elif list1[i].doc_id < list2[j].doc_id:
+                result.append(list1[i].doc_id)
                 i += 1
             else:
                 j += 1
         while i < len(list1):
-            result.append(list1[i].docId)
+            result.append(list1[i].doc_id)
             i += 1
         return result
 
     # Basic OR_Not merge two lists of IndexTerm objects and return the result as list
-    def orNot(self, list1, list2):
-        return self.basicUnion(list1, self.basicNot(list2))
-
-    def Not(self, list1, listOfAllDocs):
+    def orNot(list1:list[PositionalPosting], list2):
+        return Posting.union(list1,Posting.Not(list2))
+    
+    def Not(list1:list[PositionalPosting], listOfAllDocs):
         result = []
         i = 0
         j = 0
         while i < len(list1) and j < len(listOfAllDocs):
-            if list1[i].docId == listOfAllDocs[j].docId:
+            if list1[i].doc_id == listOfAllDocs[j].doc_id:
                 i += 1
                 j += 1
-            elif list1[i].docId < listOfAllDocs[j].docId:
+            elif list1[i].doc_id < listOfAllDocs[j].doc_id:
                 i += 1
             else:
-                result.append(listOfAllDocs[j].docId)
+                result.append(listOfAllDocs[j].doc_id)
                 j += 1
         while j < len(listOfAllDocs):
-            result.append(listOfAllDocs[j].docId)
+            result.append(listOfAllDocs[j].doc_id)
             j += 1
         return result
 
@@ -224,3 +232,9 @@ class Posting:
                     positions.append(a + k)
 
         return PositionalPosting(pos_a.doc_id, positions)
+
+def swapListIfSecondIsSmaller(list1, list2):
+    if len(list1) > len(list2):
+        return (list2, list1)
+    else: 
+        return (list1, list2)
