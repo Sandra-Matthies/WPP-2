@@ -2,12 +2,6 @@ from index import PositionalPosting
 
 
 class Posting:
-    def __init__(self):
-        self._posting = {}
-
-    def __repr__(self) -> str:
-        return f"{self._posting}\n"
-
     @staticmethod
     def intersect(p1: list[int], p2: list[int]) -> list[int]:
         """

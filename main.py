@@ -136,6 +136,7 @@ def main(query, k, r):
             result_doc_ids = handle_term(index, query, k, r)
 
         if query.is_not:
+            eprint("NOT", f'Handle NOT query part "{query}"')
             inverted = Posting.Not(result_doc_ids, index.doc_ids)
             eprint("NOT", f'Found {len(inverted)} documents for NOT query "{query}"')
             and_query_result_doc_ids.append(inverted)
@@ -152,14 +153,15 @@ def main(query, k, r):
         eprint("MAIN", f'Found 0 matches for total query "{totalQuery}"')
         return
 
-    eprint(
-        "MAIN", f'Found {len(result_doc_ids)} matches for total query "{totalQuery}"'
-    )
-
     # Print the result to stdout so it could be used in pipes without the log
     # messages.
     for doc_id in result_doc_ids:
         print(doc_id)
+
+    # Print after outputting the result so we don't have to scroll up.
+    eprint(
+        "MAIN", f'Found {len(result_doc_ids)} matches for total query "{totalQuery}"'
+    )
 
 
 def handle_prox(index: Index, query: ProxQuery) -> list[int]:
