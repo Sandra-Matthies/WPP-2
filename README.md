@@ -45,6 +45,16 @@ Einzelne Abfragen können mit folgenden Operatoren verknüpft werden:
 Klammern `()` können genutzt werden um die Reihenfolge der Abarbeitung von Teil Abfragen ändern zu
 können.
 
+## Aufbau
+
+- In [CISI](./CISI/) ist das Skript [extract.py](./CISI/extract.py) mit dem die Dokumente im
+  Verzeichnis [CISI.ALL.docs](./CISI/CISI.ALL.docs/) erstellt wurden.
+- Ein einfacher Tokenizer ist in `tokenizer.py` implementiert.
+- Der Parser ist in `parser.py` zu finden.
+- Der normale Index sowie der K-Gramm-Index befinden sich in `index.py`.
+- Die verschiedenen Algorithmen für intersect/union etc. sind in `posting.py` implementiert.
+- In `main.py` ist das CLI sowie der Code der alles zusammenbindet zu finden.
+
 ## Laufzeiten
 
 Die Laufzeiten für die einzelnen Fragen der PDF `INR Teil 1 - Boolesches IR-System` sind in
