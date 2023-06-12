@@ -194,9 +194,6 @@ def parse(input: str) -> list[Query]:
 def _parse_internal(tokens):
     """
     Internal implementation to parse the input string into a list of queries.
-
-    The parser is implemented recursively and the gist is as follows:
-        TODO
     """
     and_queries = []
     query_part = None
@@ -223,7 +220,10 @@ def _parse_internal(tokens):
             case TokenType.AND:
                 add_query(query_part)
             case TokenType.OR:
-                # TODO: documentation
+                # Parse until the next AND token or until the end if no next AND token exists.
+                # This means that we could parse many other OR queries, that's why we
+                # flatten the result further down to have one OR query with many single queries
+                # instead of many nested OR queries.
                 idx_next_and = None
                 for j in range(i + 1, len(tokens)):
                     if tokens[j].type == TokenType.AND:
@@ -268,7 +268,7 @@ def _parse_internal(tokens):
             case TokenType.TERM:
                 query_part = TermQuery(t.value)
             case TokenType.LPAREN:
-                # TODO: documentation
+                # Recursively parse until we find the closing parantheses.
                 idx_rparen = None
                 for j in range(i + 1, len(tokens)):
                     if tokens[j].type == TokenType.RPAREN:
@@ -283,6 +283,7 @@ def _parse_internal(tokens):
                 i += processed_tokens
             case TokenType.RPAREN:
                 # Not needed.
+                # Handled already above, just hear for clarity.
                 pass
 
         i += 1
