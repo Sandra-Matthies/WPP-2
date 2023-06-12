@@ -1,4 +1,12 @@
-# WPP-2
+---
+gruppe: WPP2-1
+mitglieder:
+  - Sandra Matthies
+  - Lukas Tetz
+  - Niklas Vogel
+---
+
+# WPP-2 - INR-Teil 1
 
 ## Installation
 
