@@ -168,3 +168,8 @@ class KGramIndex:
                 outOfScopes = [d for d in kgram["values"] if d["lDist"] > treshhold]
                 for outOfScope in outOfScopes:
                     kgram["values"].remove(outOfScope)
+                    
+class RankedIndex:
+    def __init__(self, term: str, doc_id: int, pos: int):
+        self.term = term
+        self.doc_id = doc_id

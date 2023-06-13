@@ -8,7 +8,7 @@ from os import path
 import click
 
 import tokenizer
-from index import Index, IndexBuilder, IndexTerm, KGramIndex, PositionalPosting
+from index import Index, IndexBuilder, IndexTerm, KGramIndex, PositionalPosting, RankedIndex
 from input_parser import (
     GroupQuery,
     PhraseQuery,
@@ -58,6 +58,14 @@ def build_index() -> Index:
 
     return builder.build()
 
+# TODO: add attributes for Ranked Index
+def build_ranked_index() -> RankedIndex:
+    builder = IndexBuilder()
+    for file in glob.iglob("./CISI/CISI.QRY"):
+        doc_id = path.basename(file)
+        for token, pos in tokenizer.tokenize(file):
+            builder.add(IndexTerm(token, int(doc_id), pos))
+    return builder.build()
 
 @measure_time
 def parse_query(query) -> list[Query]:
