@@ -103,6 +103,8 @@ def intersect_many(list_of_doc_ids: list[list[int]]) -> list[int]:
     default=3,
 )
 def main(query, k, r):
+    # for windows command line 
+    query = 'information /10 retrieval AND "library of congress"'
     totalQuery = query
     and_queries = parse_query(query)
     and_query_result_doc_ids: list[list[int]] = []
@@ -155,8 +157,14 @@ def main(query, k, r):
 
     # Print the result to stdout so it could be used in pipes without the log
     # messages.
-    for doc_id in result_doc_ids:
-        print(doc_id)
+    if "/" in totalQuery:
+        totalQuery = totalQuery.replace("/", "_")
+    with open(totalQuery+'.txt', 'w') as file:
+        file.write('Query: ' + totalQuery + '\n')
+        for doc_id in result_doc_ids:
+            doc_id_str = str(doc_id)
+            file.write(doc_id_str + '\n')
+        file.close()
 
     # Print after outputting the result so we don't have to scroll up.
     eprint(

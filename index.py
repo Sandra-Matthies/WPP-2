@@ -168,3 +168,4 @@ class KGramIndex:
                 outOfScopes = [d for d in kgram["values"] if d["lDist"] > treshhold]
                 for outOfScope in outOfScopes:
                     kgram["values"].remove(outOfScope)
+                print(kgram["values"])
