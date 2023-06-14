@@ -1,10 +1,12 @@
 import re
 
 
-def tokenize(path):
+def tokenize(path) -> tuple[str, int]:
     """
     Returns an iterator of token strings where each token matches
     the following regex: [a-z0-9']+
+
+    Returns the token and its position in the document.
     """
     token_pos = 0
     with open(path, "r") as f:
