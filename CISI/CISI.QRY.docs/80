@@ -1,0 +1,12 @@
+From the detailed analysis of eight previously published mathematicalmodels, a general formulation of Bradford's distribution can be deduced as
+follows:  y = a log(x + c) + b, where y is the ratio of the cumulative
+frequency of articles to the total number of articles and x is the ratio
+of the rank of journals to the total number of journals.  The parameters a, b,
+and c are the slope, the intercept, and the shift in a straight line to log rank,
+respectively.  Each of the eight models is a special case of the general
+formulation and is one of five types of formulation.  In order to estimate
+three unknown parameters, a statistical method using root-weighted square
+error is proposed.  A comparative experiment using 11 databases suggests that
+the fifth type of formulation with three unknown parameters is the best fit
+to the observed data.  A further experiment shows that the deletion of the
+droop data leads to a more accurate value of parameters and less error.

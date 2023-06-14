@@ -14,6 +14,8 @@ with open("./CISI.ALL", "r") as f:
         if not line:
             break
 
+        print(line)
+
         line = line.strip()
 
         if not line.startswith(".I "):

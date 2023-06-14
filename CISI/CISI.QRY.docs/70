@@ -1,0 +1,21 @@
+Decision Support Systems (DSS) represent a concept of the role ofcomputers within the decision making process.  The term has become a
+rallying cry for researchers, practitioners, and managers concerned that
+Management Science and Management Information Systems fields have become
+unnecessarily narrow in focus.  As with many rallying cries, the term is
+not well defined.  For some writers, DSS simply mean interactive systems
+for use by managers.  To others, the key issue is support, rather than
+system.  They focus on understanding and improving the decision process;
+a DSS is then designed using any available and suitable technology. Some
+researchers view DSS as a subfield of MIS, while others regard it as an
+extension of Management Science techniques.  The former define Decision
+Support as providing managers with access to data and the latter as giving
+them access to analytic models.
+
+    The key argument of this paper is that the term DSS is relevant to
+situations where a "final" system can be developed only through an
+adaptive process of learning and evolution.  The design strategy must
+then focus on getting finished; this is very different from Management
+Science and Data Processing approaches.  The research issued for DSS
+center around adaption and evolution; they include managerial learning
+representation of tasks and user behavior, design architecture and
+strategies for getting started.

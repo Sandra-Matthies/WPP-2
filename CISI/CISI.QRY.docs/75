@@ -1,0 +1,7 @@
+A new type of natural language parser is presented.  The idea behindthis parser is to map input sentences into the deepest form of the
+representation of their meaning and inferences, as is appropriate.  The
+parser is not distinct from an entire understanding system.  It uses an
+integrated conception of inferences, scripts, plans and other knowledge to
+aid in the parse.  Furthermore, it does not attempt to parse everything it
+sees.  Rather, it determines what is most interesting and concentrates on
+that, ignoring the rest.
