@@ -8,14 +8,7 @@ from os import path
 import click
 
 import tokenizer
-from index import (
-    Index,
-    IndexBuilder,
-    IndexTerm,
-    KGramIndex,
-    PositionalPosting,
-    RankedIndex,
-)
+from index import Index, IndexBuilder, IndexTerm, KGramIndex, PositionalPosting
 from input_parser import (
     GroupQuery,
     PhraseQuery,
@@ -26,6 +19,7 @@ from input_parser import (
     parse,
 )
 from posting import Posting
+from retrieval import TFIDFRetrievalSystem
 
 
 def eprint(category: str, text: str):
@@ -59,22 +53,12 @@ def build_index() -> Index:
     builder = IndexBuilder()
 
     for file in glob.iglob("./CISI/CISI.ALL.docs/*"):
-        doc_id = path.basename(file)
+        doc_id = int(path.basename(file))
+        pos = 0
         for token, pos in tokenizer.tokenize(file):
-            builder.add(IndexTerm(token, int(doc_id), pos))
-
-    return builder.build()
-
-
-@measure_time
-# TODO: add attributes for Ranked Index
-def build_ranked_index() -> RankedIndex:
-    builder = IndexBuilder()
-
-    for file in glob.iglob("./CISI/CISI.QRY.docs/*"):
-        doc_id = path.basename(file)
-        for token, pos in tokenizer.tokenize(file):
-            builder.add(IndexTerm(token, int(doc_id), pos))
+            pos += 1
+            builder.add(IndexTerm(token, doc_id, pos))
+        builder.set_doc_len(doc_id, pos)
 
     return builder.build()
 
@@ -121,7 +105,21 @@ def tf_idf():
     """
     Use a vector space model based on tf-idf to query the CISI dataset.
     """
-    index = build_ranked_index()
+    ir_system = TFIDFRetrievalSystem(build_index())
+
+    # Only test the system for the first 35 queries.
+    for i in range(1, 36):
+        text = ""
+        with open(f"./CISI/CISI.QRY.docs/{i}", "r") as f:
+            text = f.read()
+
+        ranked_results = ir_system.retrieve(text)
+
+        # TODO: Evaluate sorted ranked results.
+        print(f"Results for query document {i}:")
+        for v in ranked_results:
+            print(v)
+        print()
 
 
 @main.command()

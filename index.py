@@ -1,3 +1,6 @@
+import math
+from typing import Optional
+
 from Levenshtein import distance as lev
 
 
@@ -37,6 +40,21 @@ class PostingList:
         self.term = term
         self.doc_freq = doc_freq
         self.postings = postings
+        self.doc_ids: set[int] = set()
+        # Mapping from doc_id to term frequency.
+        self._term_frequency: dict[int, int] = {}
+
+    def calculate_document_frequency(self):
+        self.doc_ids = set([posting.doc_id for posting in self.postings])
+
+    def calculate_term_frequency(self):
+        for posting in self.postings:
+            self._term_frequency[posting.doc_id] = math.log10(
+                len(posting.positions) + 1
+            )
+
+    def get_term_frequency(self, doc_id: int) -> float:
+        return self._term_frequency.get(doc_id, 0)
 
     def __repr__(self):
         return f"{self.term}:{self.doc_freq} = {self.postings} \n"
@@ -45,9 +63,14 @@ class PostingList:
 class IndexBuilder:
     def __init__(self):
         self._index: dict[IndexTerm, int] = {}
+        # Mapping from doc id to doc length.
+        self._doc_lengths: dict[int, int] = {}
 
     def add(self, term: IndexTerm):
         self._index[term] = self._index.get(term, 0) + 1
+
+    def set_doc_len(self, doc_id: int, length: int):
+        self._doc_lengths[doc_id] = length
 
     def build(self):
         # Mapping from (term.term, term.doc_id) to a list of positions.
@@ -82,11 +105,15 @@ class IndexBuilder:
                     PositionalPosting(term.doc_id, positions)
                 )
 
-        return Index(postings_lists)
+        for posting_list in postings_lists.values():
+            posting_list.calculate_document_frequency()
+            posting_list.calculate_term_frequency()
+
+        return Index(postings_lists, self._doc_lengths)
 
 
 class Index:
-    def __init__(self, entries: dict[str, PostingList]):
+    def __init__(self, entries: dict[str, PostingList], doc_lengths: dict[int, int]):
         self._index = entries
         self.doc_ids = sorted(
             set(
@@ -97,6 +124,8 @@ class Index:
                 ]
             )
         )
+        self.doc_lengths = doc_lengths
+        self.avg_doc_length = sum(doc_lengths.values()) / len(doc_lengths)
 
     def __repr__(self):
         return f"{self._index}\n"
@@ -105,6 +134,9 @@ class Index:
         if term not in self._index:
             return []
         return sorted(self._index[term].postings, key=lambda k: k.doc_id)
+
+    def get_posting_list(self, term: str) -> Optional[PostingList]:
+        return self._index.get(term, None)
 
 
 # Klasse für die KGramm Index
@@ -169,9 +201,9 @@ class KGramIndex:
                 for outOfScope in outOfScopes:
                     kgram["values"].remove(outOfScope)
                 print(kgram["values"])
-                    
+
+
 class RankedIndex:
     def __init__(self, term: str, doc_id: int, pos: int):
         self.term = term
         self.doc_id = doc_id
-                

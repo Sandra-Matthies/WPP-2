@@ -33,3 +33,18 @@ def tokenize(path) -> tuple[str, int]:
                 if capture is not None:
                     yield (capture.groups()[0].lower(), token_pos)
                     token_pos += 1
+
+
+def tokenize_text(text: str) -> tuple[str, int]:
+    token_pos = 0
+
+    # Split on one or more whitespace.
+    parts = text.strip().split()
+
+    for part in parts:
+        capture = re.search(r"[^a-zA-Z0-9']*([a-zA-Z0-9']+)[^a-zA-Z0-9']*", part)
+
+        # Tokens like "=" do not match the above regex so we ignore them.
+        if capture is not None:
+            yield (capture.groups()[0].lower(), token_pos)
+            token_pos += 1
