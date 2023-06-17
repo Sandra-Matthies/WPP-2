@@ -1,9 +1,5 @@
 import math
 
-import matplotlib.pyplot as plt
-from sklearn.metrics import precision_recall_curve
-from tabulate import tabulate
-
 
 class Ranking:
     @staticmethod
@@ -31,24 +27,3 @@ class Ranking:
         doc:  document
         """
         return tf / (tf + k * (doc.length / doc.avgDocLen)) * math.log(n / df)
-
-    @staticmethod
-    def displayEvaluationInTable(header, data):
-        print(tabulate(data, headers=header, tablefmt="grid"))
-
-    @staticmethod
-    def plotPrecisionCurve(data, scores):
-        # calculate precision and recall
-        precision, recall, thresholds = precision_recall_curve(data, scores)
-
-        # create precision recall curve
-        fig, ax = plt.subplots()
-        ax.plot(recall, precision, color="purple")
-
-        # add axis labels to plot
-        ax.set_title("Precision-Recall Curve")
-        ax.set_ylabel("Precision")
-        ax.set_xlabel("Recall")
-
-        # display plot
-        plt.show()
