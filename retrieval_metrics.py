@@ -5,21 +5,17 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import average_precision_score, precision_recall_curve, precision_score, recall_score, f1_score
 from tabulate import tabulate
 
-from retrieval import InitRetrievalSystem
+from posting import Posting
+
 
 def get_query_by_id(query_id):
-    for file in glob.iglob("./CISI/CISI.QRY"):
+    for file in glob.iglob("./CISI/CISI.QRY.docs/" + str(query_id)):
         with open(file, "r") as f:
             lines = f.readlines()
             query = ""
             for l in range(0,len(lines)-1):
-                if lines[l].startswith('.I '+str(query_id)):
-                    l+=2
-                    while(not(lines[l].startswith('.I'))):
-                        print(lines[l])
-                        query += lines[l]
-                        l+=1
-    print(query)         
+                query += lines[l]   
+    print (query) 
     return query
 
 def read_groundtruth(path):
@@ -56,7 +52,9 @@ def get_precision_score(y_true, y_pred):
         Score: float
             Precision = TP / (TP + FP)
     """
-    return precision_score(y_true, y_pred)
+    tp = len(y_true)
+    fp = len(Posting.Not(y_pred, y_true))
+    return tp/(tp+fp)
     
 
 def get_recall_score(y_true, y_pred):
@@ -75,7 +73,9 @@ def get_recall_score(y_true, y_pred):
         Score: float
             Recall = TP / (TP + FN)
     """
-    return recall_score(y_true, y_pred)
+    tp = len(y_true)
+    fn = len(Posting.Not(y_true, list(range(1, 1460))))
+    return tp/(tp+fn)
 
 def get_fscore(y_true, y_pred, beta=1.0):
     """
@@ -95,7 +95,7 @@ def get_fscore(y_true, y_pred, beta=1.0):
         Score: float
             F-Measure = (1 + beta^2) \cdot \frac{Precision \cdot Recall}{beta^2 \cdot Precision+Recal}
     """
-    f1_score(y_true, y_pred, beta=beta)
+    return ((beta**2 +1)*get_recall_score(y_true, y_pred)*get_precision_score(y_true, y_pred))/((get_recall_score(y_true, y_pred)+ (beta**2)*get_precision_score(y_true, y_pred)))
 
 def get_precision_recall_fscore(y_true, y_pred, beta=1.0):
     """
@@ -118,7 +118,7 @@ def get_precision_recall_fscore(y_true, y_pred, beta=1.0):
             (precision, recall, f-measure)
     """
     precision, recall, f_measure = get_precision_score(y_true, y_pred), get_recall_score(y_true, y_pred), get_fscore(y_true, y_pred, beta=beta)
-    return precision, recall, f_measure
+    return precision, recall, f_measure#
 
 def displayEvaluationInTable(header, data):
         print(tabulate(data, headers=header, tablefmt="grid"))
@@ -138,66 +138,6 @@ def plotPrecisionCurve(data, scores):
 
     # display plot
     plt.show()
-    
-def main():
-    get_query_by_id(1)
-    path = "./CISI/CISI.REL"
-    all_groundtruths = read_groundtruth(path)
-    groundtruths = {}
-    query_ids = [1, 2, 3 ,4, 5, 6, 7, 8, 9, 10, 11,12, 13, 14, 15,16, 17, 18, 19, 20, 21,22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35]
-    for id in query_ids:
-        groundtruths[id] = get_groundtruth_by_query_id(all_groundtruths, str(id))
-        #print(groundtruths[id])
-    print(groundtruths)
-    
-    retrieval = InitRetrievalSystem()
-    retrievalScorer = RetrievalScorer()
-    retrievalScorer.retrieval_system = retrieval
-    all_retriveals = retrieval.retrieve()
-    retrievals = {
-        5:retrieval.retrieve(k=5),
-        10:retrieval.retrieve(k=10),
-        20:retrieval.retrieve(k=20),
-        50:retrieval.retrieve(k=50)
-        }
-    # Precision@k means the proportion of the top k documents retrieved that are relevant to the query.
-    # k = 5
-    precision_5 = get_precision_score(retrievals[5], get_query_by_id(query_ids[0]))
-    f1_5 = get_fscore(retrievals[5], get_query_by_id(query_ids[0]))
-    # k = 10
-    precision_10 = get_precision_score(retrievals[10], get_query_by_id(query_ids[0]))
-    f1_10 = get_fscore(retrievals[10], get_query_by_id(query_ids[0]))
-    # k = 20    
-    precision_20 = get_precision_score(retrievals[20], get_query_by_id(query_ids[0]))
-    f1_20 = get_fscore(retrievals[20], get_query_by_id(query_ids[0]))
-    # k = 50
-    precision_50 = get_precision_score(retrievals[50], get_query_by_id(query_ids[0]))
-    f1_50 = get_fscore(retrievals[50], get_query_by_id(query_ids[0]))
-    header = ["k","R-Precision", "F1 Score"]
-    data = [["5", precision_5, f1_5], ["10", precision_10, f1_10], ["20", precision_20, f1_20], ["50", precision_50, f1_50]]
-    displayEvaluationInTable(data=data, header=header)
-    
-    # MAP = Mean Average Precision 
-    map = retrievalScorer.MAP(query_ids, all_retriveals)
-    print("MAP: ", map)
-    
-    # R-Precision = Precision at Rank r
-    r_precision = retrievalScorer.rPrecision(query_ids, all_retriveals)
-    print("R-Precision: ", r_precision)
-    
-    # Precision-Recall Curve
-    q11 = get_query_by_id(query_ids[10])
-    q14 = get_query_by_id(query_ids[13])
-    q19 = get_query_by_id(query_ids[18])
-    q20 = get_query_by_id(query_ids[19])
-    q11_res = retrievalScorer.elevenPointAP(q11, all_retriveals)
-    plotPrecisionCurve(all_retriveals, q11_res)
-    q14_res = retrievalScorer.elevenPointAP(q14, all_retriveals)
-    plotPrecisionCurve(all_retriveals, q14_res)
-    q19_res = retrievalScorer.elevenPointAP(q19, all_retriveals)
-    plotPrecisionCurve(all_retriveals, q19_res)
-    q20_res = retrievalScorer.elevenPointAP(q20, all_retriveals)
-    plotPrecisionCurve(all_retriveals, q20_res)
             
 class RetrievalScorer:
     """
@@ -296,6 +236,69 @@ class RetrievalScorer:
             
         map_score = 1/len(queries) * sum(avg_precicions)
         return map_score
+    
+class Evaluation:
+    @staticmethod
+    def execute_evaluation(ir_system):
+        path = "./CISI/CISI.REL"
+        all_groundtruths = read_groundtruth(path)
+        groundtruths = {}
+        query_ids = list(range(1,35))
+        for id in query_ids:
+            groundtruths[id] = get_groundtruth_by_query_id(all_groundtruths, str(id))
+            #print(groundtruths[id])
+        #print(groundtruths)
         
-if __name__ == "__main__":
-    main()     
+        retrievalScorer = RetrievalScorer(ir_system)
+        all_retriveals = ir_system.retrieve(get_query_by_id(query_ids[0]))
+        retrievals = {
+            5:ir_system.retrieve_k(query=get_query_by_id(query_ids[0]), k=5),
+            10:ir_system.retrieve_k(query=get_query_by_id(query_ids[0]), k=10),
+            20:ir_system.retrieve_k(query=get_query_by_id(query_ids[0]), k=20),
+            50:ir_system.retrieve_k(query=get_query_by_id(query_ids[0]), k=50)
+            }
+        # Precision@k means the proportion of the top k documents retrieved that are relevant to the query.
+        # k = 5
+        print("Groundtruths: ", groundtruths[1])
+        retrieved_docids = list(map(lambda x: x.doc_id, retrievals[5]))
+        precision_5 = get_precision_score(groundtruths[1], retrieved_docids)
+        print("Precision@5: ", precision_5)
+        f1_5 = get_fscore(groundtruths[1], retrieved_docids)
+        # k = 10
+        retrieved_docids = list(map(lambda x: x.doc_id, retrievals[10]))
+        precision_10 = get_precision_score(groundtruths[1], retrieved_docids)
+        f1_10 = get_fscore(groundtruths[1], retrieved_docids)
+        # k = 20  
+        retrieved_docids = list(map(lambda x: x.doc_id, retrievals[20]))  
+        precision_20 = get_precision_score(groundtruths[1], retrieved_docids)
+        f1_20 = get_fscore(groundtruths[1], retrieved_docids)
+        # k = 50
+        retrieved_docids = list(map(lambda x: x.doc_id, retrievals[50]))
+        precision_50 = get_precision_score(groundtruths[1], retrieved_docids)
+        f1_50 = get_fscore(groundtruths[1], retrieved_docids)
+        header = ["k","R-Precision", "F1 Score"]
+        data = [["5", precision_5, f1_5], ["10", precision_10, f1_10], ["20", precision_20, f1_20], ["50", precision_50, f1_50]]
+        displayEvaluationInTable(data=data, header=header)
+        
+        # MAP = Mean Average Precision 
+        #map = retrievalScorer.MAP(query_ids, all_retriveals)
+        #print("MAP: ", map)
+        
+        # R-Precision = Precision at Rank r
+        #r_precision = retrievalScorer.rPrecision(query_ids, all_retriveals)
+        #print("R-Precision: ", r_precision)
+        
+        # Precision-Recall Curve
+        #q11 = get_query_by_id(query_ids[10])
+        #q14 = get_query_by_id(query_ids[13])
+        #q19 = get_query_by_id(query_ids[18])
+        #q20 = get_query_by_id(query_ids[19])
+        #q11_res = retrievalScorer.elevenPointAP(q11, all_retriveals)
+        #plotPrecisionCurve(all_retriveals, q11_res)
+        #q14_res = retrievalScorer.elevenPointAP(q14, all_retriveals)
+        #plotPrecisionCurve(all_retriveals, q14_res)
+        #q19_res = retrievalScorer.elevenPointAP(q19, all_retriveals)
+        #plotPrecisionCurve(all_retriveals, q19_res)
+        #q20_res = retrievalScorer.elevenPointAP(q20, all_retriveals)
+        #plotPrecisionCurve(all_retriveals, q20_res)
+            

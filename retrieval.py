@@ -1,9 +1,11 @@
+import glob
 import math
 from abc import ABC, abstractmethod
+from os import path
 
 import tokenizer
 from index import Index
-
+    
 
 class RankedResult:
     """Describes the result of a ranked retrieval query."""
@@ -45,10 +47,12 @@ class TFIDFRetrievalSystem(InitRetrievalSystem):
 
     def retrieve(self, query: str) -> list[RankedResult]:
         tokens = list(map(lambda x: x[0], tokenizer.tokenize_text(query)))
+        print(tokens)
         return self._fast_cosine_score(tokens)
 
     def retrieve_k(self, query: str, k: int) -> list[RankedResult]:
         tokens = list(map(lambda x: x[0], tokenizer.tokenize_text(query)))
+        print(tokens)
         return self._fast_cosine_score(tokens)[:k]
 
     def _fast_cosine_score(self, query: list[str]) -> list[RankedResult]:

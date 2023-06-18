@@ -6,7 +6,7 @@ mitglieder:
   - Niklas Vogel
 ---
 
-# WPP-2 - INR-Teil 1
+# WPP-2 - INR-Teil 1 & 2
 
 ## Installation
 
@@ -53,6 +53,8 @@ Einzelne Abfragen können mit folgenden Operatoren verknüpft werden:
 Klammern `()` können genutzt werden um die Reihenfolge der Abarbeitung von Teil Abfragen ändern zu
 können.
 
+Es können auch Bag of Words abfragen ausgeführt werden, wobei die Queries hierbei aus der Datei [CSI.QRY] stammen
+
 ## Aufbau
 
 - In [CISI](./CISI/) ist das Skript [extract.py](./CISI/extract.py) mit dem die Dokumente im
@@ -62,8 +64,12 @@ können.
 - Der normale Index sowie der K-Gramm-Index befinden sich in `index.py`.
 - Die verschiedenen Algorithmen für intersect/union etc. sind in `posting.py` implementiert.
 - In `main.py` ist das CLI sowie der Code der alles zusammenbindet zu finden.
+- In `retrieval.py` wird das Inr-System erzeugt und die Funktionen zum retrieval werden hier definiert.
+- In `retrieval_metrics` werden Recall, Precision, F1-Score und die Tabellen bzw. Diagramme berechnet und erzeugt.
 
 ## Laufzeiten
 
 Die Laufzeiten für die einzelnen Fragen der PDF `INR Teil 1 - Boolesches IR-System` sind in
 [RUNTIMES.md](./RUNTIMES.md) zu finden.
+
+
