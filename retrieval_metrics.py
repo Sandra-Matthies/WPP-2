@@ -27,7 +27,7 @@ def positionOf(val, lst):
             return i
     return -1
 
-def get_query_by_id(query_id):
+def get_query_by_id(query_id: int):
     query = ""
     for file in glob.iglob("./CISI/CISI.QRY.docs/" + str(query_id)):
         with open(file, "r") as f:
@@ -208,6 +208,19 @@ class RetrievalScorer:
         
         return r_precision
     
+    def avp(self, query: str, y_true: list):
+        """_summary_
+
+        Args:
+            query (str): _description_
+            y_true (list): _description_
+            
+        Returns:
+         Average precision score for a given query and the ground trouth.
+        """
+        retrieval = self.retrieval_system.retrieve(query)
+        return get_precision_score(y_true, retrieval)
+    
     def elevenPointAP(self, query: str, y_true: list):
         """
         Calculate the 11-point average precision score.
@@ -224,7 +237,11 @@ class RetrievalScorer:
         Tuple: (float, list, list)
             (11-point average precision score, recall levels, precision levels).
         """
-        eleven_point_ap = average_precision_score(y_true, self.retrieval_system.retrieve(query))
+        eleven_point_ap = []
+        for i in range(0, 10):
+            eleven_point_ap.append( self.avp(get_query_by_id(query), y_true)/i)
+            print("Recall: ", i/10, "Precision: ", )
+            
         recall_levels = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
         precision_levels = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
         
@@ -251,7 +268,7 @@ class RetrievalScorer:
             query = queries[:positionOf(groundtruth, queries)]
             retrievals = self.retrieval_system.retrieve(get_query_by_id(query))
             retrieved_docids = list(map(lambda x: x.doc_id, retrievals))
-            sum += get_precision_score(retrieved_docids, groundtruth)
+            #sum += get_precision_score(retrieved_docids, groundtruth)
         map_score = sum/len(groundtruths)
         return map_score
     
@@ -264,8 +281,6 @@ class Evaluation:
         query_ids = list(range(1,35))
         for id in query_ids:
             groundtruths[id] = get_groundtruth_by_query_id(all_groundtruths, str(id))
-            #print(groundtruths[id])
-        #print(groundtruths)
         
         retrievalScorer = RetrievalScorer(ir_system)
         all_retriveals = ir_system.retrieve(get_query_by_id(query_ids[0]))
@@ -300,8 +315,8 @@ class Evaluation:
         
         # MAP = Mean Average Precision 
         #Out Of Range ????
-        _map = retrievalScorer.MAP(query_ids, all_retriveals)
-        print("MAP: ", _map)
+        #_map = retrievalScorer.MAP(query_ids, all_retriveals)
+        #print("MAP: ", _map)
         
         # R-Precision = Precision at Rank r
         r_precision = retrievalScorer.rPrecision(query_ids, all_retriveals)
