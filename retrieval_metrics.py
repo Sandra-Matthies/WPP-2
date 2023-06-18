@@ -32,7 +32,7 @@ def get_query_by_id(query_id: int):
     for file in glob.iglob("./CISI/CISI.QRY.docs/" + str(query_id)):
         with open(file, "r") as f:
             lines = f.readlines()
-            for l in range(0,len(lines)-1):
+            for l in range(0,len(lines)):
                 query += lines[l]   
     return query
 
