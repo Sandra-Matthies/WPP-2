@@ -6,7 +6,7 @@ import time
 from os import path
 
 import click
-from retrieval_metrics import Evaluation
+
 import tokenizer
 from index import Index, IndexBuilder, IndexTerm, KGramIndex, PositionalPosting
 from input_parser import (
@@ -20,6 +20,7 @@ from input_parser import (
 )
 from posting import Posting
 from retrieval import TFIDFRetrievalSystem
+from retrieval_metrics import Evaluation
 
 
 def eprint(category: str, text: str):
@@ -115,13 +116,7 @@ def tf_idf():
 
         ranked_results = ir_system.retrieve(text)
 
-        # TODO: Evaluate sorted ranked results.
-        print()
-        with open("outputs_tf_idf/"+str(i) + ".txt", "w") as file:
-            file.write("Results for query document "+str(i)+":\n")
-            for v in ranked_results:
-                file.write("docId: "+ str(v.doc_id) + "score: "+ str(v.score) + "\n")
-    # Evaluation        
+    # Evaluation
     Evaluation.execute_evaluation(ir_system=ir_system)
 
 

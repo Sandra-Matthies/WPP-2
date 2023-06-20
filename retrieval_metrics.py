@@ -164,34 +164,6 @@ def displayEvaluationInTable(header, data):
     print(tabulate(data, headers=header, tablefmt="grid"))
 
 
-def plotPrecisionCurve(
-    data: list[RankedResult], scores: tuple[list[int], list[int], list[int]]
-):
-    print("DATA")
-    print(data)
-    print("-" * 80)
-    print("SCORES")
-    print(scores)
-    print("-" * 80)
-
-    # TODO: `data` hat den falschen typen fuer precision_recall_curve.
-
-    # calculate precision and recall
-    precision, recall, thresholds = precision_recall_curve(data, scores)
-
-    # create precision recall curve
-    fig, ax = plt.subplots()
-    ax.plot(recall, precision, color="purple")
-
-    # add axis labels to plot
-    ax.set_title("Precision-Recall Curve")
-    ax.set_ylabel("Precision")
-    ax.set_xlabel("Recall")
-
-    # display plot
-    plt.show()
-
-
 class RetrievalScorer:
     """
     Retrieval score system.
@@ -250,9 +222,7 @@ class RetrievalScorer:
 
         return r_precision
 
-    # TODO: Wenn das `y_true` ist, müssen das dann nicht die "Ground Truths" sein?
-    #       Aktuell sind es unsere Ergebnisse.
-    def avp(self, query: str, y_true: list[RankedResult]):
+    def avp(self, query: str, y_true: list[int]):
         """_summary_
 
         Args:
@@ -269,16 +239,16 @@ class RetrievalScorer:
         print(f"S IS: {s}")
         return s
 
-    def elevenPointAP(self, query: str, y_true: list[RankedResult]):
+    def plot_precision_recall_curve(self, y_true: list[int], y_pred: list[int]):
         """
-        Calculate the 11-point average precision score.
+        Calculate the precision recall curve.
 
         Parameters
         ----------
         y_true : list
             List of known relevant documents for a given query.
-        query : str
-            A query.
+        y_pred : list
+            List of retrieved documents for a given query.
 
         Returns
         -------
@@ -286,16 +256,38 @@ class RetrievalScorer:
             (11-point average precision score, recall levels, precision levels).
         """
         eleven_point_ap = []
+        eleven_point_ar = []
+        correct = 0
+
         for i in range(0, 10):
-            # TODO: erste iteration ergibt NaN da durch 0 geteilt wird.
-            eleven_point_ap.append(self.avp(query, y_true) / i)
-            # TODO precision value
-            print(f"Recall: {i / 10} Precision: ")
+            if i < len(y_pred) and y_pred[i] in y_true:
+                correct += 1
+            eleven_point_ap.append(correct / (i + 1))
+            eleven_point_ar.append(correct / len(y_pred))
 
-        recall_levels = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
-        precision_levels = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
+        x_ys = list(zip(eleven_point_ar, eleven_point_ap))
+        p = map(lambda x: x[1], x_ys)
+        r = map(lambda x: x[0], x_ys)
+        data = list(zip(range(1, 11), p, r))
 
-        return eleven_point_ap, recall_levels, precision_levels
+        # No need to display the R-Precision separately as it is just one entry in the table.
+        displayEvaluationInTable(header=["Top k", "R-Precision", "Recall"], data=data)
+
+        def plot_curve():
+            _, ax = plt.subplots()
+
+            ax.plot(eleven_point_ar, eleven_point_ap, color="purple")
+            plt.axis([0, 1, 0, 1])
+
+            # add axis labels to plot
+            ax.set_title("Precision-Recall Curve")
+            ax.set_ylabel("Precision")
+            ax.set_xlabel("Recall")
+
+            # display plot
+            plt.show()
+
+        plot_curve()
 
     def MAP(self, queries, groundtruths):
         """
@@ -328,75 +320,85 @@ class Evaluation:
     def execute_evaluation(ir_system: InitRetrievalSystem):
         path = "./CISI/CISI.REL"
         all_groundtruths = read_groundtruth(path)
-        groundtruths = {}
-        query_ids = list(range(1, 35))
-        for id in query_ids:
+        groundtruths: dict[int, list[int]] = {}
+        for id in range(1, 36):
             groundtruths[id] = get_groundtruth_by_query_id(all_groundtruths, str(id))
 
         retrievalScorer = RetrievalScorer(ir_system)
-        all_retriveals = ir_system.retrieve(get_query_by_id(query_ids[0]))
-        print(len(all_retriveals))
-        retrievals = {
-            5: ir_system.retrieve_k(query=get_query_by_id(query_ids[0]), k=5),
-            10: ir_system.retrieve_k(query=get_query_by_id(query_ids[0]), k=10),
-            20: ir_system.retrieve_k(query=get_query_by_id(query_ids[0]), k=20),
-            50: ir_system.retrieve_k(query=get_query_by_id(query_ids[0]), k=50),
+
+        retrievalsat_k = {
+            5: ir_system.retrieve_k(query=get_query_by_id(1), k=5),
+            10: ir_system.retrieve_k(query=get_query_by_id(1), k=10),
+            20: ir_system.retrieve_k(query=get_query_by_id(1), k=20),
+            50: ir_system.retrieve_k(query=get_query_by_id(1), k=50),
         }
-        # Precision@k means the proportion of the top k documents retrieved that are relevant to the query.
+
+        retrievals_eleven_point = {
+            11: ir_system.retrieve_k(query=get_query_by_id(11), k=11),
+            14: ir_system.retrieve_k(query=get_query_by_id(14), k=11),
+            19: ir_system.retrieve_k(query=get_query_by_id(19), k=11),
+            20: ir_system.retrieve_k(query=get_query_by_id(20), k=11),
+        }
+
+        # Precision@k means the proportion of the top k documents retrieved that
+        # are relevant to the query.
         # k = 5
-        retrieved_docids = list(map(lambda x: x.doc_id, retrievals[5]))
+        retrieved_docids = list(map(lambda x: x.doc_id, retrievalsat_k[5]))
         precision_5 = get_precision_score(groundtruths[1], retrieved_docids)
+        recall_5 = get_recall_score(groundtruths[1], retrieved_docids)
         f1_5 = get_fscore(groundtruths[1], retrieved_docids)
+
         # k = 10
-        retrieved_docids = list(map(lambda x: x.doc_id, retrievals[10]))
+        retrieved_docids = list(map(lambda x: x.doc_id, retrievalsat_k[10]))
         precision_10 = get_precision_score(groundtruths[1], retrieved_docids)
+        recall_10 = get_recall_score(groundtruths[1], retrieved_docids)
         f1_10 = get_fscore(groundtruths[1], retrieved_docids)
+
         # k = 20
-        retrieved_docids = list(map(lambda x: x.doc_id, retrievals[20]))
+        retrieved_docids = list(map(lambda x: x.doc_id, retrievalsat_k[20]))
         precision_20 = get_precision_score(groundtruths[1], retrieved_docids)
+        recall_20 = get_recall_score(groundtruths[1], retrieved_docids)
         f1_20 = get_fscore(groundtruths[1], retrieved_docids)
         # k = 50
-        # Out of Range
-        retrieved_docids = list(map(lambda x: x.doc_id, retrievals[50]))
+
+        retrieved_docids = list(map(lambda x: x.doc_id, retrievalsat_k[50]))
         precision_50 = get_precision_score(groundtruths[1], retrieved_docids)
+        recall_50 = get_recall_score(groundtruths[1], retrieved_docids)
         f1_50 = get_fscore(groundtruths[1], retrieved_docids)
-        header = ["k", "Precision", "F1 Score"]
+        header = ["k", "Precision", "Recall", "F1 Score"]
+
         data = [
-            ["5", precision_5, f1_5],
-            ["10", precision_10, f1_10],
-            ["20", precision_20, f1_20],
-            ["50", precision_50, f1_50],
+            ["5", precision_5, recall_5, f1_5],
+            ["10", precision_10, recall_10, f1_10],
+            ["20", precision_20, recall_20, f1_20],
+            ["50", precision_50, recall_50, f1_50],
         ]
+        print("Precision, Recall, F1 @ 5|10|20|50:")
         displayEvaluationInTable(data=data, header=header)
 
+        # TODO
         # MAP = Mean Average Precision
         # Out Of Range ????
         # _map = retrievalScorer.MAP(query_ids, all_retriveals)
         # print("MAP: ", _map)
 
-        # R-Precision = Precision at Rank r
-        r_precision = retrievalScorer.rPrecision(query_ids, all_retriveals)
-        print("R-Precision: ", r_precision)
+        # Precision-Recall Curves
+        print("\nQuery 11:")
+        retrievalScorer.plot_precision_recall_curve(
+            groundtruths[11], list(map(lambda x: x.doc_id, retrievals_eleven_point[11]))
+        )
 
-        # Precision-Recall Curve
-        q11 = get_query_by_id(query_ids[10])
-        print(f"q11: {q11}")
-        q14 = get_query_by_id(query_ids[13])
-        print(f"q14: {q14}")
-        q19 = get_query_by_id(query_ids[18])
-        print(f"q19: {q19}")
-        q20 = get_query_by_id(query_ids[19])
-        print(f"q20: {q20}")
+        print("\nQuery 14:")
+        retrievalScorer.plot_precision_recall_curve(
+            groundtruths[14], list(map(lambda x: x.doc_id, retrievals_eleven_point[14]))
+        )
 
-        # TODO: all_retrieval sind die die wir bekommen haben, brauchen aber
-        #       denke ich die ground truths.
-        q11_res = retrievalScorer.elevenPointAP(q11, all_retriveals)
-        print(q11_res)
-        exit(1)
-        plotPrecisionCurve(all_retriveals, q11_res)
-        q14_res = retrievalScorer.elevenPointAP(q14, all_retriveals)
-        plotPrecisionCurve(all_retriveals, q14_res)
-        q19_res = retrievalScorer.elevenPointAP(q19, all_retriveals)
-        plotPrecisionCurve(all_retriveals, q19_res)
-        q20_res = retrievalScorer.elevenPointAP(q20, all_retriveals)
-        plotPrecisionCurve(all_retriveals, q20_res)
+        print("\nQuery 19:")
+        retrievalScorer.plot_precision_recall_curve(
+            groundtruths[19], list(map(lambda x: x.doc_id, retrievals_eleven_point[19]))
+        )
+
+        print("\nQuery 20:")
+        retrievalScorer.plot_precision_recall_curve(
+            groundtruths[20], list(map(lambda x: x.doc_id, retrievals_eleven_point[20]))
+        )
