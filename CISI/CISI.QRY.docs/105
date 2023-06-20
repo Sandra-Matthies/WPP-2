@@ -1,0 +1,6 @@
+Indexing quality determines whether the information content of an indexeddocument is accurately represented.  Indexing effectiveness measures whether
+an indexed document is correctly retrieved every time it is relevant to a
+query.  Measurement of these criteria is cumbersome and costly; data base
+producers therefore prefer inter-indexer consistency as a measure of indexing
+quality or effectiveness.  The present article assesses the validity of this
+substitution in various environments.

@@ -1,0 +1,4 @@
+This paper describes the design and implementation of an "electronic filingmachine," a machine which is capable of storing large numbers of "unstructured"
+documents in such a way a particular document may be easily and quickly
+retrieved.  A functional distributed architecture permits the implementation
+of the system in a mixture of hardware and software.

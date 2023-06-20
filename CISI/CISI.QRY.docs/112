@@ -1,0 +1,5 @@
+A fast algorithm is described for comparing the lists of terms representingdocuments in automatic classification experiments.  The speed of the procedure
+arises from the fact that all of the non-zero-valued coefficicents for a given
+document are identified together, using an inverted file to the terms in the
+document collection.  The complexity and running time of the algorithm are
+compared with previously described procedures.

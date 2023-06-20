@@ -1,0 +1,12 @@
+The retrieval performance of book indexes can be measured in terms oftheir ability to direct a user selectively to text material whose identity
+but not location is known.  The method requires human searchers to base
+their searching strategies on actual passages from the book rather than on
+test queries, natural or contrived.  It circumvents the need for relevance
+judgement, but still yields performance indicators that correspond
+approximately to the recall and precision ratios of large document retrieval
+system evaluation.  A preliminary application of the method to the subject
+indexing of two major encyclopedias showed one encyclopedia apparently
+superior in both the finding and discrimination abilities of retrieval
+performance.  The method is presently best suited for comparative testing
+since its ability to yield absolute or reproducible measures is as yet not
+established.

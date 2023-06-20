@@ -1,0 +1,6 @@
+The question is asked whether it is feasible to use subsets ofnatural languages as query languages for data bases in actual applications
+using the question answering system "USER SPECIALTY LANGUAGES" (USL).
+Methods of evaluating a natural language based information system will
+be discussed.  The results (error and language structure evaluation)
+suggest how to form the general architecture of application systems which
+use a subset of German as query language.

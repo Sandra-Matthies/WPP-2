@@ -1,0 +1,15 @@
+This paper describes an architectural approach that provides informationexchange across a broad spectrum of user applications and office automation
+offerings.  Some of the architectures described herein are currently
+implemented in existing IBM products.  These and other architectures will
+provide the basis for document interchange capability between products
+such as the IBM 5520 Administrative System, the IBM System/370 Distributed
+Office Support System (DISOSS), and the IBM Displaywriter System.
+Specifically described is a document distribution architecture and its
+associated data streams and others.
+
+    A general overview of the architectures as opposed to a detailed
+technical description is provided.  The architectures described are
+protocols for interchange between application processes; they do not
+address the specific user interface.  The document distribution
+architectures utilize SNA for data transmission and communications control
+facilities.

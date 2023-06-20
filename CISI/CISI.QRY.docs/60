@@ -1,0 +1,12 @@
+A linkage similarity measure which takes into account both the bibliographiccoupling of documents and their cocitations (both cited and citing papers)
+produced improved document retrieval over a measure based only on
+bibliographic coupling.  The test collection consisted of 1712 papers whose
+relevance to specific queries had been judged by users.  To evaluate the
+effect of using cocitation data, we calculated for each query two measures
+of similarity between each relevant paper and every other paper retrieved.
+Papers were then sorted by the similarity measures, producing two ordered
+lists.  We then compared the resulting predictions of relevance, partial
+relevance, and non-relevance to the user's evaluations of the same papers.
+Overall, the change from the bibliographic coupling measure to the linkage
+similarity measure, representing the introduction of cocitation data,
+resulted in better retrieval performance.

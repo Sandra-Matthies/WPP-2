@@ -1,0 +1,11 @@
+This paper presents a method of normalizations of English titles andtheir retrieval.  The title expressed by a noun phrase or a noun clause
+is converted to a function-expression by parsing.  For the retrieval with
+a reasonable recall rate as well as a high precision rate, the function-
+expression is transformed to a predicate-governor form, and then normalized
+to a standard form.  Therefrom, various items are extracted and recorded
+in a hierarchical tree-like inverted file.
+
+    In order to keep the recall rate in a reasonable value, several
+retrieval stages are implemented based on the key-term and case-label
+matching.  The retrieval is controlled by the preciseness of the specification
+of case-labels for each key-term.

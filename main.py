@@ -19,6 +19,8 @@ from input_parser import (
     parse,
 )
 from posting import Posting
+from retrieval import TFIDFRetrievalSystem
+from retrieval_metrics import Evaluation
 
 
 def eprint(category: str, text: str):
@@ -52,9 +54,12 @@ def build_index() -> Index:
     builder = IndexBuilder()
 
     for file in glob.iglob("./CISI/CISI.ALL.docs/*"):
-        doc_id = path.basename(file)
+        doc_id = int(path.basename(file))
+        pos = 0
         for token, pos in tokenizer.tokenize(file):
-            builder.add(IndexTerm(token, int(doc_id), pos))
+            pos += 1
+            builder.add(IndexTerm(token, doc_id, pos))
+        builder.set_doc_len(doc_id, pos)
 
     return builder.build()
 
@@ -88,7 +93,34 @@ def intersect_many(list_of_doc_ids: list[list[int]]) -> list[int]:
     return result_doc_ids
 
 
-@click.command()
+@click.group()
+def main():
+    """
+    IR System to query the CISI dataset.
+    """
+    pass
+
+
+@main.command()
+def tf_idf():
+    """
+    Use a vector space model based on tf-idf to query the CISI dataset.
+    """
+    ir_system = TFIDFRetrievalSystem(build_index())
+
+    # Only test the system for the first 35 queries.
+    for i in range(1, 36):
+        text = ""
+        with open(f"./CISI/CISI.QRY.docs/{i}", "r") as f:
+            text = f.read()
+
+        ranked_results = ir_system.retrieve(text)
+
+    # Evaluation
+    Evaluation.execute_evaluation(ir_system=ir_system)
+
+
+@main.command()
 @click.option("-q", "--query", help="Boolean query to search for.", required=True)
 @click.option(
     "-k",
@@ -102,8 +134,11 @@ def intersect_many(list_of_doc_ids: list[list[int]]) -> list[int]:
     type=click.IntRange(1),
     default=3,
 )
-def main(query, k, r):
-    # for windows command line 
+def boolean_retrieval(query, k, r):
+    """
+    Use a boolean retrieval model to query the CISI dataset.
+    """
+    # for windows command line
     query = 'information /10 retrieval AND "library of congress"'
     totalQuery = query
     and_queries = parse_query(query)
@@ -159,11 +194,11 @@ def main(query, k, r):
     # messages.
     if "/" in totalQuery:
         totalQuery = totalQuery.replace("/", "_")
-    with open(totalQuery+'.txt', 'w') as file:
-        file.write('Query: ' + totalQuery + '\n')
+    with open(totalQuery + ".txt", "w") as file:
+        file.write("Query: " + totalQuery + "\n")
         for doc_id in result_doc_ids:
             doc_id_str = str(doc_id)
-            file.write(doc_id_str + '\n')
+            file.write(doc_id_str + "\n")
         file.close()
 
     # Print after outputting the result so we don't have to scroll up.

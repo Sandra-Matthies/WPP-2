@@ -1,0 +1,7 @@
+REFLES is a microcomputer-based system for data retrieval in libraryenvironments.  The problem of information retrieval is discussed from a
+theoretical point of view, followed by an analysis of the reference process
+and data thereby gathered, leading to a description of REFLES in terms of
+its hardware and software.  REFLES, a prototype system at present, currently
+functions in a test environment.  Examples of data contained in the system
+and of its use are presented.  Future considerations and speculations on
+other versions of the system conclude the paper.

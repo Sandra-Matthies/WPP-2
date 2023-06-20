@@ -1,0 +1,12 @@
+A commercially available online search was used as a standard forcomparative searching and evaluation of an in-house information system
+based on automatic indexing.  System features were identified and
+evaluated on the basis of their usefulness in various kinds of searching,
+their ease in implementation, and how they are influenced by differences
+in user type or specific applications.  Some common features of the
+commercial system, such as online instruction, user-specified print formats,
+dictionary display, and truncation, are seen to be unnecessary or
+impractical for the in-house system.  In designing the in-house system,
+therefore, detald consideration must be given to the applications,
+operating environment, and real user needs.  While a commercial system can
+serve as a useful standard for comparative evaluation, one must be
+careful not to attempt to duplicate it blindly in-house.

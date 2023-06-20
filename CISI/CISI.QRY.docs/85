@@ -1,0 +1,20 @@
+This paper is intended to propose a new methodological approach tothe conception and development of natural language understanding systems.
+This new contribution is supported by the design, implementation, and
+experimentation of DONAU:  a general purpose domain oriented natural
+language understanding system developed and presently running at the Milan
+Polytechnic Artificial Intelligence Project.  The system is based on a two
+level modular architecture intended to overcome the lack of flexibility and
+generality often pointed out in many existing systems, and to facilitate
+the exchange of results and actual experiences between different projects.
+The horizontal level allows an independent and parallel development of the
+single segments of the system (syntactic analyser, information extractor,
+legality controller).  The vertical level ensures the possibility of changing
+(enlarging or redefining) the definition of the semantic domain on which each
+particular version of the system is oriented and specialized in a simple,
+incremental, and user-oriented way.  In the paper the general architecture of
+the system and the mode of operation of each segment are illustrated in
+detail.  Linguistic models, knowledge representation, and parsing algorithms
+are described and illustrated by means of selected examples.  Performance
+evaluations of the system in the application version on data base inquiry are
+reported and discussed.  Promising directions for future research are presented
+in the conclusions.
