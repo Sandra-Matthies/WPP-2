@@ -305,13 +305,17 @@ class RetrievalScorer:
         Score: float
             MAP = frac{1}{|Q|} \cdot \sum_{q \in Q} AP(q).
         """
-        sum = 0
-        for groundtruth in groundtruths:
-            query = queries[: positionOf(groundtruth, queries)]
-            retrievals = self.retrieval_system.retrieve(get_query_by_id(query))
-            retrieved_docids = list(map(lambda x: x.doc_id, retrievals))
-            # sum += get_precision_score(retrieved_docids, groundtruth)
-        map_score = sum / len(groundtruths)
+        result: dict[int, list[int]] = {}
+        correct = 0
+        for i in range(0, len(queries)):
+            result[i]= result.get(i,[0])
+            for k in range(1, 11):
+                y_pred = list(map(lambda x: x.doc_id, self.retrieval_system.retrieve_k(get_query_by_id(queries[i]), k)))                
+                if y_pred[-1] in groundtruths[queries[i]]:
+                    correct += 1
+                    result[i].append(correct/k) 
+        avp = list(map(lambda x: sum(x)/len(x), result.values()))
+        map_score = sum(avp) / len(queries)
         return map_score
 
 
@@ -376,11 +380,11 @@ class Evaluation:
         print("Precision, Recall, F1 @ 5|10|20|50:")
         displayEvaluationInTable(data=data, header=header)
 
-        # TODO
         # MAP = Mean Average Precision
-        # Out Of Range ????
-        # _map = retrievalScorer.MAP(query_ids, all_retriveals)
-        # print("MAP: ", _map)
+        query_ids = list(range(1, 16))
+        map_score =retrievalScorer.MAP(query_ids, groundtruths)
+        print(f"\n\nMAP for {len(query_ids)} Queries: {map_score}")
+        
 
         # Precision-Recall Curves
         print("\nQuery 11:")
