@@ -107,16 +107,6 @@ def tf_idf():
     Use a vector space model based on tf-idf to query the CISI dataset.
     """
     ir_system = TFIDFRetrievalSystem(build_index())
-
-    # Only test the system for the first 35 queries.
-    for i in range(1, 36):
-        text = ""
-        with open(f"./CISI/CISI.QRY.docs/{i}", "r") as f:
-            text = f.read()
-
-        ranked_results = ir_system.retrieve(text)
-
-    # Evaluation
     Evaluation.execute_evaluation(ir_system=ir_system)
 
 

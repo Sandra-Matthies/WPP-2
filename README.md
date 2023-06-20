@@ -28,17 +28,22 @@ python ./main.py --help
 Das führt zu folgender Ausgabe:
 
 ```
-Usage: main.py [OPTIONS]
+Usage: main.py [OPTIONS] COMMAND [ARGS]...
+
+  IR System to query the CISI dataset.
 
 Options:
-  -q, --query TEXT  Boolean query to search for.  [required]
-  -k INTEGER RANGE  k-gram size for the k-gram index.  [x>=1; required]
-  -r INTEGER RANGE  Activate spelling correction when less than r documents
-                    are found.  [x>=1]
-  --help            Show this message and exit.
+  --help  Show this message and exit.
+
+Commands:
+  boolean-retrieval  Use a boolean retrieval model to query the CISI...
+  tf-idf             Use a vector space model based on tf-idf to query...
+
 ```
 
-Das IR-System unterstützt die folgenden Abfragen:
+### Boolsche IR-System
+
+Das boolsche IR-System unterstützt die folgenden Abfragen:
 
 - Term
 - Phrase
@@ -53,7 +58,14 @@ Einzelne Abfragen können mit folgenden Operatoren verknüpft werden:
 Klammern `()` können genutzt werden um die Reihenfolge der Abarbeitung von Teil Abfragen ändern zu
 können.
 
-Es können auch Bag of Words abfragen ausgeführt werden, wobei die Queries hierbei aus der Datei [CSI.QRY] stammen
+Es können auch Bag of Words abfragen ausgeführt werden, wobei die Queries hierbei aus der Datei
+[CSI.QRY] stammen
+
+### Vektorraum basierte IR-System
+
+Das auf TF-IDF basierende Vektorraum IR-System unterstützt folgende Abfragen:
+
+- Bag of Words Abfragen
 
 ## Aufbau
 
@@ -64,12 +76,12 @@ Es können auch Bag of Words abfragen ausgeführt werden, wobei die Queries hier
 - Der normale Index sowie der K-Gramm-Index befinden sich in `index.py`.
 - Die verschiedenen Algorithmen für intersect/union etc. sind in `posting.py` implementiert.
 - In `main.py` ist das CLI sowie der Code der alles zusammenbindet zu finden.
-- In `retrieval.py` wird das Inr-System erzeugt und die Funktionen zum retrieval werden hier definiert.
-- In `retrieval_metrics` werden Recall, Precision, F1-Score und die Tabellen bzw. Diagramme berechnet und erzeugt.
+- In `retrieval.py` wird das Inr-System erzeugt und die Funktionen zum retrieval werden hier
+  definiert.
+- In `retrieval_metrics` werden Recall, Precision, F1-Score etc. sowie die Tabellen bzw. Diagramme
+  berechnet und erzeugt.
 
 ## Laufzeiten
 
 Die Laufzeiten für die einzelnen Fragen der PDF `INR Teil 1 - Boolesches IR-System` sind in
 [RUNTIMES.md](./RUNTIMES.md) zu finden.
-
-

@@ -2,11 +2,9 @@ import glob
 
 import matplotlib.pyplot as plt
 import numpy as np
-from sklearn.metrics import average_precision_score, precision_recall_curve
 from tabulate import tabulate
 
-# import pandas as pd
-from retrieval import InitRetrievalSystem, RankedResult
+from retrieval import InitRetrievalSystem
 
 
 def calculate_matrix(found, relevant):
@@ -308,13 +306,20 @@ class RetrievalScorer:
         result: dict[int, list[int]] = {}
         correct = 0
         for i in range(0, len(queries)):
-            result[i]= result.get(i,[0])
+            result[i] = result.get(i, [0])
             for k in range(1, 11):
-                y_pred = list(map(lambda x: x.doc_id, self.retrieval_system.retrieve_k(get_query_by_id(queries[i]), k)))                
+                y_pred = list(
+                    map(
+                        lambda x: x.doc_id,
+                        self.retrieval_system.retrieve_k(
+                            get_query_by_id(queries[i]), k
+                        ),
+                    )
+                )
                 if y_pred[-1] in groundtruths[queries[i]]:
                     correct += 1
-                    result[i].append(correct/k) 
-        avp = list(map(lambda x: sum(x)/len(x), result.values()))
+                    result[i].append(correct / k)
+        avp = list(map(lambda x: sum(x) / len(x), result.values()))
         map_score = sum(avp) / len(queries)
         return map_score
 
@@ -382,9 +387,8 @@ class Evaluation:
 
         # MAP = Mean Average Precision
         query_ids = list(range(1, 16))
-        map_score =retrievalScorer.MAP(query_ids, groundtruths)
+        map_score = retrievalScorer.MAP(query_ids, groundtruths)
         print(f"\n\nMAP for {len(query_ids)} Queries: {map_score}")
-        
 
         # Precision-Recall Curves
         print("\nQuery 11:")

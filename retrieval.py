@@ -1,11 +1,9 @@
-import glob
 import math
 from abc import ABC, abstractmethod
-from os import path
 
 import tokenizer
 from index import Index
-    
+
 
 class RankedResult:
     """Describes the result of a ranked retrieval query."""
@@ -42,7 +40,6 @@ class InitRetrievalSystem(ABC):
 class TFIDFRetrievalSystem(InitRetrievalSystem):
     def __init__(self, index: Index):
         super().__init__(index.doc_ids)
-        self._term_frequencies = {}
         self._index = index
 
     def retrieve(self, query: str) -> list[RankedResult]:

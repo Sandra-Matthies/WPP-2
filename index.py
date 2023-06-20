@@ -201,9 +201,3 @@ class KGramIndex:
                 for outOfScope in outOfScopes:
                     kgram["values"].remove(outOfScope)
                 print(kgram["values"])
-
-
-class RankedIndex:
-    def __init__(self, term: str, doc_id: int, pos: int):
-        self.term = term
-        self.doc_id = doc_id
