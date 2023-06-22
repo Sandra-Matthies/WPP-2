@@ -129,7 +129,6 @@ def boolean_retrieval(query, k, r):
     Use a boolean retrieval model to query the CISI dataset.
     """
     # for windows command line
-    query = 'information /10 retrieval AND "library of congress"'
     totalQuery = query
     and_queries = parse_query(query)
     and_query_result_doc_ids: list[list[int]] = []
